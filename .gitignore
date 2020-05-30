@@ -1,0 +1,4 @@
+/data
+.venv
+.vim
+.mypy_cache
