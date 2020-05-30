@@ -1,0 +1,24 @@
+md5: 73f6be7dbc6511ea3420d1450ede00be
+cmd: python pipe/resize.py
+deps:
+- md5: 7c7949204a5547d6e25aef109dfa56d1
+  path: pipe/resize.py
+- md5: 5d1a75a42c39a65cf84664d5d0e0f0b4.dir
+  path: data/test
+- md5: 9591f3b1fe39ddb679aadfd5ec9c6b3c.dir
+  path: data/train
+- md5: 86657c7009b003543b377b62a8745b4c
+  path: data/train.csv
+- md5: 90a1a5b724eb0cf2666fbd850d6f55b1
+  path: data/test.csv
+outs:
+- md5: 73757c03eedb9cec603984370d2c368a
+  path: data/x_train_32.npy
+  cache: true
+  metric: false
+  persist: false
+- md5: cde5914bb820799f2108dc79aa335742
+  path: data/x_test_32.npy
+  cache: true
+  metric: false
+  persist: false
