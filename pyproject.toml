@@ -8,6 +8,7 @@ authors = ["Gianluca Rossi <gr.gianlucarossi@gmail.com>"]
 python = "^3.7"
 pandas = "^1.0.4"
 pillow = "^7.1.2"
+scikit_learn = "^0.23.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"

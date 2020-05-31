@@ -1,0 +1,15 @@
+md5: 008e8898aecf9a1b4cd1fc9671359bf3
+cmd: python pipe/train.py
+deps:
+- md5: 73757c03eedb9cec603984370d2c368a
+  path: data/x_train_32.npy
+- md5: 86657c7009b003543b377b62a8745b4c
+  path: data/train.csv
+- md5: df5430d9f22456c157c334736242b8c9
+  path: pipe/train.py
+outs:
+- md5: 0e9cd295b4d383c03b05651ef2540c98
+  path: metrics/cv.metric
+  cache: false
+  metric: true
+  persist: false
