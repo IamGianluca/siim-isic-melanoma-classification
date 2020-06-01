@@ -1,0 +1,15 @@
+md5: d6e3f1392fd86fdebd5b646d621ebc76
+cmd: python pipe/predict.py
+deps:
+- md5: dc90008ff8026e201f466e3a002228c4
+  path: pipe/predict.py
+- md5: fe019779394f583bb65be4b7d13402c1
+  path: models/stage1.joblib
+- md5: cde5914bb820799f2108dc79aa335742
+  path: data/x_test_32.npy
+outs:
+- md5: c56cbfbebbdc77500966dc3666e9202b
+  path: subs/submission.csv
+  cache: true
+  metric: false
+  persist: false

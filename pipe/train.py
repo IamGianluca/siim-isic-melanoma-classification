@@ -2,9 +2,10 @@ import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import make_pipeline
-from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import cross_validate
 import pandas as pd
 from constants import N_TRAIN
+import joblib
 
 
 def main():
@@ -18,14 +19,20 @@ def main():
             C=1, solver="lbfgs", multi_class="multinomial", max_iter=60
         ),
     )
-    cv_scores = cross_val_score(
-        pipe, X=X_train, y=y_train, cv=10, scoring="roc_auc", n_jobs=-1
-    )
-    cv_score = np.mean(cv_scores)
 
-    print(np.mean(cv_score))
+    # cross validation
+    cv_results = cross_validate(
+        pipe, X=X_train, y=y_train, cv=10, scoring="roc_auc", n_jobs=-1,
+    )
+    cv_score = np.mean(cv_results["test_score"])
+
+    print(f"CV AUC: {cv_score:.4f}")
     with open("./metrics/cv.metric", "w") as f:
         f.write(f"AUC: {cv_score:.4f}")
+
+    # train model on entire training dataset
+    pipe.fit(X=X_train, y=y_train)
+    joblib.dump(pipe, "./models/stage1.joblib")
 
 
 if __name__ == "__main__":

@@ -1,2 +1,2 @@
 N_TRAIN = 33126
-N_TEST = ...
+N_TEST = 10982
