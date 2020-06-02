@@ -4,10 +4,10 @@ import pandas as pd
 
 from constants import (
     N_TEST,
-    test_array_image_fpath,
-    submissions_path,
-    test_fpath,
     models_path,
+    submissions_path,
+    test_array_image_fpath,
+    test_fpath,
 )
 
 

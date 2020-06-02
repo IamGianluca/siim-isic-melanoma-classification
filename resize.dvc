@@ -1,7 +1,7 @@
-md5: c588218db215b09354e19ddbecc4ca7c
+md5: 4819d7ff0aa3ed8861b05ec7eb6116ae
 cmd: python pipe/resize.py
 deps:
-- md5: 392bba1b64865712e6f7bd095705b2f0
+- md5: 12e06c84f5806922046470ff091f3561
   path: pipe/resize.py
 - md5: 5d1a75a42c39a65cf84664d5d0e0f0b4.dir
   path: data/test
