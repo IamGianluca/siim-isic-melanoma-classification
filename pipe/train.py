@@ -8,10 +8,10 @@ from sklearn.preprocessing import StandardScaler
 
 from constants import (
     N_TRAIN,
+    metrics_path,
+    models_path,
     train_array_image_fpath,
     train_fpath,
-    models_path,
-    metrics_path,
 )
 
 
