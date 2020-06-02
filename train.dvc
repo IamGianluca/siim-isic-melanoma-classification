@@ -1,19 +1,19 @@
-md5: d4f4504d2e9a8a965e6f0d6e1e06c993
+md5: 096c37ad18d5138786aacbfd3a3aa9dc
 cmd: python pipe/train.py
 deps:
 - md5: 73757c03eedb9cec603984370d2c368a
   path: data/x_train_32.npy
 - md5: 86657c7009b003543b377b62a8745b4c
   path: data/train.csv
-- md5: 09f4a19b829690835430e7b47c8b7035
+- md5: 07858025a348714e3543b86084a94f33
   path: pipe/train.py
 outs:
-- md5: 0e9cd295b4d383c03b05651ef2540c98
+- md5: 07ad73c74c8fd5f8e07b0d0b5c8c40cf
   path: metrics/cv.metric
   cache: false
   metric: true
   persist: false
-- md5: fe019779394f583bb65be4b7d13402c1
+- md5: 82c9cd28160874916a5dfd85d9c6f84f
   path: models/stage1.joblib
   cache: true
   metric: false

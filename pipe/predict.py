@@ -1,23 +1,25 @@
 import joblib
-import numpy as np
 import pandas as pd
 
-from constants import (
-    N_TEST,
+from siim_isic_melanoma_classification.constants import (
     models_path,
     submissions_path,
-    test_array_image_fpath,
     test_fpath,
 )
+from siim_isic_melanoma_classification.prepare import prepare_dataset
 
 
 def main():
-    ar = np.load(test_array_image_fpath)
-    X_test = ar.reshape(N_TEST, 32 * 32 * 3)
+    X_test, _ = prepare_dataset(name="test")
 
-    pipe = joblib.load(models_path / "stage1.joblib")
-    y_preds = pipe.predict_proba(X_test)
+    sclf = joblib.load(models_path / "stage1.joblib")
+    y_preds = sclf.predict_proba(X_test)
 
+    # prepare submission
+    prepare_submission(y_preds=y_preds)
+
+
+def prepare_submission(y_preds):
     image_names = pd.read_csv(test_fpath)
     preds_df = pd.DataFrame(
         {"image_name": image_names["image_name"], "target": y_preds[:, 1]}

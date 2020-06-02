@@ -1,31 +1,54 @@
 import joblib
 import numpy as np
-import pandas as pd
+from sklearn.compose import make_column_transformer
+from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import cross_validate
 from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-from constants import (
-    N_TRAIN,
+from siim_isic_melanoma_classification.constants import (
     metrics_path,
     models_path,
-    train_array_image_fpath,
-    train_fpath,
 )
+from siim_isic_melanoma_classification.prepare import prepare_dataset
 
 
 def main():
-    train = np.load(train_array_image_fpath)
-    X_train = train.reshape(N_TRAIN, 32 * 32 * 3)
-    y_train = pd.read_csv(train_fpath)["target"]
+    X_train, y_train = prepare_dataset(name="train")
 
-    pipe = make_pipeline(
-        StandardScaler(),
-        LogisticRegression(
-            C=1, solver="lbfgs", multi_class="multinomial", max_iter=60
+    XXX = list(range(32 * 32 * 3))
+
+    tfms = make_column_transformer(
+        # flattened image data
+        (StandardScaler(), XXX),
+        # other contextual features
+        (
+            SimpleImputer(
+                missing_values=np.NaN,
+                strategy="constant",
+                fill_value=0,
+                add_indicator=True,
+            ),
+            ["age_approx"],
         ),
+        (
+            make_pipeline(
+                SimpleImputer(
+                    missing_values=np.NaN,
+                    strategy="most_frequent",
+                    add_indicator=True,  # does this column get feed into OHE?
+                ),
+                OneHotEncoder(handle_unknown="ignore"),
+            ),
+            ["patient_id", "sex", "anatom_site_general_challenge"],
+        ),
+        remainder="drop",
     )
+    clf = LogisticRegression(
+        C=1, solver="lbfgs", multi_class="multinomial", max_iter=60
+    )
+    pipe = make_pipeline(tfms, clf)
 
     # cross validation
     cv_results = cross_validate(
