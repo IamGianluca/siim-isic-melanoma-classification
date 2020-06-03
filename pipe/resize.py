@@ -5,12 +5,18 @@ import numpy as np
 import pandas as pd
 from PIL import Image
 
+from siim_isic_melanoma_classification.constants import (
+    train_fpath,
+    test_fpath,
+    data_path,
+)
+
 IMAGE_SZ = 32
 
 
 def main():
-    train_df = pd.read_csv("./data/train.csv")
-    test_df = pd.read_csv("./data/test.csv")
+    train_df = pd.read_csv(train_fpath)
+    test_df = pd.read_csv(test_fpath)
 
     # loop through the images from the images ids from the target\id dataset
     # then grab the cooresponding image from disk, pre-process, and store
@@ -18,7 +24,7 @@ def main():
     for df, name in [(train_df, "train"), (test_df, "test")]:
         print(f"Converting {name} images to NumPy array...")
         ar = convert_to_array(df, name=name)
-        np.save(f"./data/x_{name}_32", ar)
+        np.save(data_path / f"x_{name}_32", ar)
 
 
 def convert_to_array(df, name: str):
@@ -29,7 +35,7 @@ def convert_to_array(df, name: str):
 
 
 def image_to_flattened_array(image_id, name: str, desired_size=IMAGE_SZ):
-    image_fpath = f"./data/{name}/{image_id}.jpg"
+    image_fpath = data_path / f"{name}/{image_id}.jpg"
     im = Image.open(image_fpath)
     small_im = im.resize((desired_size,) * 2, resample=Image.LANCZOS)
     return np.array(small_im).reshape((1, 32, 32, 3))
