@@ -62,7 +62,7 @@ def main():
 
     # train model on entire training dataset
     pipe.fit(X=X_train, y=y_train)
-    joblib.dump(pipe, models_path / "stage1.joblib")
+    joblib.dump(pipe, models_path / "stage1_lr.joblib")
 
 
 if __name__ == "__main__":
