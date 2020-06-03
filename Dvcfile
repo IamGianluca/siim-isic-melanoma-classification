@@ -1,7 +1,7 @@
-md5: 2991fb7e8af42ec9cfa527547dfe3a8e
+md5: 5afde052e2d8972cfe5b4e335eebde72
 cmd: python pipe/predict.py
 deps:
-- md5: 1ba9ab5e0c962c7bdf36336e3991ee8a
+- md5: 1df7e0e0fae70671c1c58ebddf37d83c
   path: pipe/predict.py
 - md5: 82c9cd28160874916a5dfd85d9c6f84f
   path: models/stage1_lr.joblib

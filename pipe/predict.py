@@ -12,7 +12,7 @@ from siim_isic_melanoma_classification.prepare import prepare_dataset
 def main():
     X_test, _ = prepare_dataset(name="test")
 
-    sclf = joblib.load(models_path / "stage1.joblib")
+    sclf = joblib.load(models_path / "stage1_lr.joblib")
     y_preds = sclf.predict_proba(X_test)
 
     # prepare submission
