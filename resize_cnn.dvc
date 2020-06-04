@@ -1,0 +1,24 @@
+md5: fb54b5becf9f7d206d1f1c417f91d790
+cmd: python pipe/resize_cnn.py
+deps:
+- md5: ffdaac4b6837c444ebea1b476ed60c5c
+  path: pipe/resize_cnn.py
+- md5: 9591f3b1fe39ddb679aadfd5ec9c6b3c.dir
+  path: data/train
+- md5: 5d1a75a42c39a65cf84664d5d0e0f0b4.dir
+  path: data/test
+- md5: 86657c7009b003543b377b62a8745b4c
+  path: data/train.csv
+- md5: 90a1a5b724eb0cf2666fbd850d6f55b1
+  path: data/test.csv
+outs:
+- md5: f2f70059bbddbba3062ca938acc4f416.dir
+  path: data/train_224
+  cache: true
+  metric: false
+  persist: false
+- md5: 854492a7d22cbf44c7960cda639f7167.dir
+  path: data/test_224
+  cache: true
+  metric: false
+  persist: false

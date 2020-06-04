@@ -1,0 +1,18 @@
+md5: 764b6cdec56d75d3ba56e1745e240ea6
+cmd: python pipe/split.py
+deps:
+- md5: e7951f0b598293e2bbf6380d5539d920
+  path: pipe/split.py
+- md5: 86657c7009b003543b377b62a8745b4c
+  path: data/train.csv
+outs:
+- md5: 3d222e3f3995efff9ee5b168898e4189
+  path: data/train_patients.csv
+  cache: true
+  metric: false
+  persist: false
+- md5: c57bee68a7e4a18b964cae0aab3d347b
+  path: data/valid_patients.csv
+  cache: true
+  metric: false
+  persist: false

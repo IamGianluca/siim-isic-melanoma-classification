@@ -5,6 +5,12 @@ N_TEST = 10_982
 
 path = Path(".")
 data_path = path / "data"
+train_img_path = data_path / "train"
+test_img_path = data_path / "test"
+
+train_img_224_path = data_path / "train_224"
+test_img_224_path = data_path / "test_224"
+
 metrics_path = path / "metrics"
 models_path = path / "models"
 submissions_path = path / "subs"
