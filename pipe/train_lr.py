@@ -41,7 +41,7 @@ def main():
                 ),
                 OneHotEncoder(handle_unknown="ignore"),
             ),
-            ["patient_id", "sex", "anatom_site_general_challenge"],
+            ["sex", "anatom_site_general_challenge"],
         ),
         remainder="drop",
     )
