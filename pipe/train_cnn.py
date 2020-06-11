@@ -19,29 +19,25 @@ import argparse
 model_fpath = models_path / "stage1_resnet18.pth"
 
 
-def main(train: bool = True, epochs: int = 5, bs: int = 200, sz: int = 128):
-    transform = Compose(
-        [Resize((128, 128)), ToTensor(), Normalize(mean=0, std=1)]
-    )
-    print("Creating Dataset")
-    test_ds = MelanomaDataset(
-        csv_fpath=data_path / "test.csv",
-        images_path=test_img_224_path,
-        transform=transform,
-        train=False,
-    )
-    print("Creating DataLoaders...")
-    test_dl = DataLoader(test_ds, batch_size=bs, shuffle=False, num_workers=8,)
-    # plot_a_batch(train_dl)
+arch = "resnet18"
+sz = 128
+bs = 600
+lr = 1e-4
+mom = 0.9
+epochs = 80
 
-    print("Setting up model...")
-    hparams = dict_to_args({"sz": 128, "bs": 400, "lr": 1e-4, "mom": 0.9})
+
+def main(train: bool = True):
+    hparams = dict_to_args(
+        {"arch": arch, "sz": sz, "bs": bs, "lr": lr, "mom": mom}
+    )
     model = MyModel(hparams=hparams)
     # from pytorch_lightning.profiler import AdvancedProfiler
 
     # profiler = AdvancedProfiler()
     trainer = Trainer(
-        gpus=1, max_epochs=80,  # train_percent_check=0.1, profiler=profiler
+        gpus=1,
+        max_epochs=epochs,  # train_percent_check=0.1, profiler=profiler
     )
 
     if train:
@@ -55,14 +51,31 @@ def main(train: bool = True, epochs: int = 5, bs: int = 200, sz: int = 128):
     model.load_from_checkpoint(model_fpath)
     model.freeze()
 
+    # TODO: move this inside Model and maybe find a way to keep it in sync with
+    # the transformations we make on the validation set
+    transform = Compose(
+        [
+            Resize((128, 128)),
+            ToTensor(),
+            Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ]
+    )
+    test_ds = MelanomaDataset(
+        csv_fpath=data_path / "test.csv",
+        images_path=test_img_224_path,
+        transform=transform,
+        train=False,
+    )
+    test_dl = DataLoader(test_ds, batch_size=bs, shuffle=False, num_workers=8,)
     results: List[torch.Tensor] = list()
     for batch_num, data in enumerate(test_dl):
         data = data.to("cuda")
         results.append(model(data))
     y_preds = torch.cat(results, axis=0)
+
     prepare_submission(
         y_preds=y_preds.cpu().numpy().squeeze(),
-        fname="resnet18_submission.csv",
+        fname=f"{arch}_submission.csv",
     )
 
 
@@ -85,7 +98,7 @@ def dict_to_args(d):
     return args
 
 
-def plot_a_batch(train_dl):
+def plot_a_batch(train_dl: DataLoader):
     for batch_number, sample_batched in enumerate(train_dl):
         if batch_number == 3:
             plt.figure()

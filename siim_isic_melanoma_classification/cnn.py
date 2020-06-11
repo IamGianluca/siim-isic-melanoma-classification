@@ -23,25 +23,30 @@ class MyModel(LightningModule):
     def __init__(self, hparams):
         super().__init__()
         self.hparams = hparams
-        image_modules = list(models.resnet18(pretrained=True).children())[
+        # TODO: only train new head
+        if "resnet" not in self.hparams.arch:
+            raise ValueError(
+                "Not tested for architectures different from ResNet"
+            )
+        original_model = models.__dict__[self.hparams.arch](pretrained=True)
+        image_modules = list(original_model.children())[
             :-1
-        ]  # all layer expect last layer
+        ]  # keep all layers except last one
         self.headless_resnet = nn.Sequential(*image_modules)
-        self.fc = nn.Linear(in_features=512, out_features=1, bias=True)
-
-    def forward(self, x):
-        x = self.headless_resnet(x)
-        x = torch.flatten(x, 1)
-        x = self.fc(x)
-        x = torch.sigmoid(x)
-        return x
+        self.fc = nn.Linear(
+            in_features=original_model.fc.in_features,
+            out_features=1,
+            bias=True,
+        )
 
     def train_dataloader(self):
         transform = Compose(
             [
                 Resize((self.hparams.sz, self.hparams.sz)),
                 ToTensor(),
-                Normalize(mean=0, std=1),
+                Normalize(
+                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                ),
             ]
         )
         train_ds = MelanomaDataset(
@@ -63,7 +68,9 @@ class MyModel(LightningModule):
             [
                 Resize((self.hparams.sz, self.hparams.sz)),
                 ToTensor(),
-                Normalize(mean=0, std=1),
+                Normalize(
+                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                ),
             ]
         )
         valid_ds = MelanomaDataset(
@@ -85,6 +92,13 @@ class MyModel(LightningModule):
             self.parameters(), lr=self.hparams.lr, momentum=self.hparams.mom
         )
 
+    def forward(self, x):
+        x = self.headless_resnet(x)
+        x = torch.flatten(x, 1)
+        x = self.fc(x)
+        x = torch.sigmoid(x)
+        return x
+
     def training_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self(x).squeeze()
@@ -103,6 +117,8 @@ class MyModel(LightningModule):
         ).mean()
         probs = torch.cat([out["probs"] for out in outputs], dim=0)
         gt = torch.cat([out["gt"] for out in outputs], dim=0)
+
+        # move to CPU since we are using sklearn function to compute AUC:w
         probs = probs.detach().cpu().numpy()
         gt = gt.detach().cpu().numpy()
 
@@ -111,7 +127,6 @@ class MyModel(LightningModule):
         print(
             f"Epoch {self.current_epoch}: {avg_loss:.2f}, auc: {auc_roc:.4f}"
         )
-
         return {"avg_val_loss": avg_loss, "log": tensorboard_logs}
 
 
