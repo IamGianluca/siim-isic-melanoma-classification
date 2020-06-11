@@ -1,20 +1,20 @@
+import argparse
 from typing import List
-from pytorch_lightning import Trainer
-import torchvision.utils as utils
 
 import matplotlib.pyplot as plt
 import torch
-from siim_isic_melanoma_classification.submit import prepare_submission
-from siim_isic_melanoma_classification.cnn import MyModel
-from siim_isic_melanoma_classification.constants import models_path
-from siim_isic_melanoma_classification.cnn import MelanomaDataset
+import torchvision.utils as utils
+from pytorch_lightning import Trainer
 from torch.utils.data import DataLoader
+from torchvision.transforms import Compose, Normalize, Resize, ToTensor
+
+from siim_isic_melanoma_classification.cnn import MelanomaDataset, MyModel
 from siim_isic_melanoma_classification.constants import (
     data_path,
+    models_path,
     test_img_224_path,
 )
-from torchvision.transforms import Compose, Resize, ToTensor, Normalize
-import argparse
+from siim_isic_melanoma_classification.submit import prepare_submission
 
 model_fpath = models_path / "stage1_resnet18.pth"
 

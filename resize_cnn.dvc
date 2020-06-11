@@ -1,7 +1,7 @@
-md5: fb54b5becf9f7d206d1f1c417f91d790
+md5: 06b4075c2cb7bfae3065fb1bbbba528b
 cmd: python pipe/resize_cnn.py
 deps:
-- md5: ffdaac4b6837c444ebea1b476ed60c5c
+- md5: 6ad6ce56c8acfbf67dead3b5335a0e3e
   path: pipe/resize_cnn.py
 - md5: 9591f3b1fe39ddb679aadfd5ec9c6b3c.dir
   path: data/train

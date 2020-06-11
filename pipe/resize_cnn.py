@@ -3,6 +3,7 @@ from multiprocessing import Pool
 
 import pandas as pd
 from PIL import Image
+
 from siim_isic_melanoma_classification.constants import (
     data_path,
     test_fpath,

@@ -1,17 +1,16 @@
 import os
-from pytorch_lightning.core.lightning import LightningModule
 from pathlib import Path
+
+import pandas as pd
 import torch
 import torch.nn as nn
 import torchvision.models as models
 from PIL import Image
-
-import pandas as pd
-from torch.utils.data import DataLoader, Dataset
-from torchvision.transforms import Compose, Resize, ToTensor, Normalize
+from pytorch_lightning.core.lightning import LightningModule
 from sklearn.metrics import roc_auc_score
-
 from torch.optim import SGD
+from torch.utils.data import DataLoader, Dataset
+from torchvision.transforms import Compose, Normalize, Resize, ToTensor
 
 from siim_isic_melanoma_classification.constants import (
     data_path,

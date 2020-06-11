@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-from siim_isic_melanoma_classification.constants import train_fpath, data_path
+from siim_isic_melanoma_classification.constants import data_path, train_fpath
 
 
 def main():
