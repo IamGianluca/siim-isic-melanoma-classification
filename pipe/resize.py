@@ -6,9 +6,9 @@ import pandas as pd
 from PIL import Image
 
 from siim_isic_melanoma_classification.constants import (
-    train_fpath,
-    test_fpath,
     data_path,
+    test_fpath,
+    train_fpath,
 )
 
 IMAGE_SZ = 32
@@ -18,9 +18,6 @@ def main():
     train_df = pd.read_csv(train_fpath)
     test_df = pd.read_csv(test_fpath)
 
-    # loop through the images from the images ids from the target\id dataset
-    # then grab the cooresponding image from disk, pre-process, and store
-    # in matrix in memory
     for df, name in [(train_df, "train"), (test_df, "test")]:
         print(f"Converting {name} images to NumPy array...")
         ar = convert_to_array(df, name=name)
