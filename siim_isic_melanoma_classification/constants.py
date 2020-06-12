@@ -17,6 +17,7 @@ submissions_path = path / "subs"
 
 train_fpath = data_path / "train.csv"
 test_fpath = data_path / "test.csv"
+folds_fpath = data_path / "folds.csv"
 
 train_array_image_fpath = data_path / "x_train_32.npy"
 test_array_image_fpath = data_path / "x_test_32.npy"
