@@ -1,38 +1,36 @@
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GroupKFold
 
-from siim_isic_melanoma_classification.constants import data_path, train_fpath
+from siim_isic_melanoma_classification.constants import (
+    folds_fpath,
+    train_fpath,
+)
 
 
 def main():
-    """Split train/valid set."""
-    train_df = pd.read_csv(train_fpath)
+    df = pd.read_csv(train_fpath)
+    # TODO: shall we use a StratifiedGroupKFold strategy also here?
+    df_with_folds = assign_fold(df, group_var="patient_id", n_folds=5)
+    print(df_with_folds.groupby("fold").target.mean())
+    df_with_folds.to_csv(folds_fpath)
 
-    patient_ids = train_df["patient_id"].unique()
-    patient_means = train_df.groupby(["patient_id"])["target"].mean()
 
-    # split at patient_id level
-    train_idx, val_idx = train_test_split(
-        np.arange(len(patient_ids)),
-        stratify=(patient_means > 0),
-        test_size=0.2,  # validation set size
-    )
+def assign_fold(df: pd.DataFrame, group_var: str, n_folds: int):
+    df["fold"] = np.empty(df.shape[0])
 
-    train_patient_ids = patient_ids[train_idx]
-    train = train_df[train_df.patient_id.isin(train_patient_ids)]
-    print(f"Samples in train set: {train.shape[0]:,}")
-    print(f"Pct of pos. in train set: {train.target.mean():.2%}")
+    kf = GroupKFold(n_splits=n_folds)
+    for fold_number, (_, oof_idx) in enumerate(
+        kf.split(df, groups=df.loc[:, group_var])
+    ):
+        df.loc[oof_idx, "fold"] = fold_number
 
-    valid_patient_ids = patient_ids[val_idx]
-    valid = train_df[train_df.patient_id.isin(valid_patient_ids)]
-    print(f"Samples in valid set: {valid.shape[0]:,}")
-    print(f"Pct of pos. in valid set: {valid.target.mean():.2%}")
+    assert df.fold.isna().sum() == 0
+    assert df.fold.min() == 0
+    assert df.fold.max() == n_folds - 1
+    assert all(df.groupby("patient_id").fold.nunique() == 1)
 
-    assert train_df.shape[0] == train.shape[0] + valid.shape[0]
-
-    train.to_csv(data_path / "train_patients.csv")
-    valid.to_csv(data_path / "valid_patients.csv")
+    return df
 
 
 if __name__ == "__main__":

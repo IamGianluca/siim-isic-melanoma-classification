@@ -1,18 +1,13 @@
-md5: 1bfd39e4ef5f6472b3955cc5d415ee56
+md5: 6ea3e1eb10a1215c7b4a049546c8025e
 cmd: python pipe/split.py
 deps:
-- md5: f14f1f7316d43c7328aadfafdbef7822
+- md5: 2ebab12100828590f2c304f65427678e
   path: pipe/split.py
 - md5: 86657c7009b003543b377b62a8745b4c
   path: data/train.csv
 outs:
-- md5: 06dd072e4a62d4d6f7d0f95e0b6d514d
-  path: data/train_patients.csv
-  cache: true
-  metric: false
-  persist: false
-- md5: d9dab89d7b33d059df1e4d17b14ec9cc
-  path: data/valid_patients.csv
+- md5: 6b19d60713e891d29e26e9265df5c60a
+  path: data/folds.csv
   cache: true
   metric: false
   persist: false

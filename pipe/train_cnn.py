@@ -2,81 +2,169 @@ import argparse
 from typing import List
 
 import matplotlib.pyplot as plt
+import pandas as pd
 import torch
 import torchvision.utils as utils
 from pytorch_lightning import Trainer
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import roc_auc_score
 from torch.utils.data import DataLoader
-from torchvision.transforms import Compose, Normalize, Resize, ToTensor
+import numpy as np
 
+from albumentations.core.composition import Compose
+from albumentations.augmentations.transforms import (
+    Normalize,
+    Resize,
+)
+from albumentations.pytorch import ToTensor
 from siim_isic_melanoma_classification.cnn import MelanomaDataset, MyModel
 from siim_isic_melanoma_classification.constants import (
     data_path,
     models_path,
+    train_img_224_path,
     test_img_224_path,
+    folds_fpath,
+)
+from siim_isic_melanoma_classification.model_selection import (
+    stratified_group_k_fold,
 )
 from siim_isic_melanoma_classification.submit import prepare_submission
+from siim_isic_melanoma_classification.constants import (
+    metrics_path,
+    submissions_path,
+    test_fpath,
+)
 
-model_fpath = models_path / "stage1_resnet18.pth"
 
-
-arch = "resnet18"
+arch = "resnet34"
 sz = 128
-bs = 600
+bs = 400
 lr = 1e-4
 mom = 0.9
-epochs = 80
+epochs = 2  # TODO: 3 is okay for resnet18, but resnet34 starts to overfit after 2 epochs without any data augmentation
+
+model_fpath = models_path / f"stage1_{arch}.pth"
 
 
-def main(train: bool = True):
+def main(create_submission: bool = True, crossvalidate: bool = True):
     hparams = dict_to_args(
-        {"arch": arch, "sz": sz, "bs": bs, "lr": lr, "mom": mom}
+        {
+            "arch": arch,
+            "epochs": epochs,
+            "sz": sz,
+            "bs": bs,
+            "lr": lr,
+            "mom": mom,
+        }
     )
-    model = MyModel(hparams=hparams)
-    # from pytorch_lightning.profiler import AdvancedProfiler
 
-    # profiler = AdvancedProfiler()
+    if crossvalidate:
+        # NOTE: we are not going to save the parameters of our DL model here.
+        # We are only trying to assess how good the model is
+        folds = pd.read_csv(folds_fpath)
+        n_folds = folds.fold.nunique()
+
+        oof_predictions = list()
+        for fold_number in range(n_folds):
+            train_val = folds[folds.fold != fold_number].reset_index(drop=True)
+            test_df = folds[folds.fold == fold_number].reset_index(drop=True)
+
+            # split train/val set
+            train_df, valid_df = split_train_test_using_stratigy_group_k_fold(
+                train_val
+            )
+
+            # train model and report valid scores progress during training
+            model = MyModel(
+                hparams=hparams, train_df=train_df, valid_df=valid_df
+            )
+            trainer = Trainer(
+                gpus=1,
+                max_epochs=hparams.epochs,
+                # auto_lr_find="lr",
+                progress_bar_refresh_rate=0,
+            )
+            trainer.fit(model)
+
+            # make predictions on OOF data
+            transform = Compose(
+                [
+                    Resize(height=128, width=128),
+                    Normalize(
+                        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                    ),
+                    ToTensor(),
+                ]
+            )
+            test_ds = MelanomaDataset(
+                df=test_df,
+                images_path=train_img_224_path,
+                transform=transform,
+                train_or_valid=False,
+            )
+            test_dl = DataLoader(
+                test_ds, batch_size=int(bs / 4), shuffle=False, num_workers=8,
+            )
+
+            results: List[np.ndarray] = list()
+            model.freeze()
+            for batch_num, data in enumerate(test_dl):
+                data = data.to("cuda")
+                results.append(model(data).to("cpu").numpy().squeeze())
+            preds = np.concatenate(results, axis=0)
+
+            # store OOF predictions
+            preds = pd.DataFrame(
+                {"image_name": test_df.image_name, "preds": preds}
+            )
+            oof_predictions.append(preds)
+
+    oof_preds = pd.concat(oof_predictions).reset_index()
+
+    # sort OOF predictions
+    y_true = train_df.loc[:, ["image_name", "target"]]
+    r = pd.merge(
+        y_true,
+        oof_preds,
+        how="inner",
+        left_on="image_name",
+        right_on="image_name",
+    )
+
+    # save OOF predictions for L2 meta-model (stacking)
+    r.to_csv(data_path / "l1_resnet_oof_predictions.csv", index=False)
+
+    # use OOF predictions to compute CV AUC
+    cv_score = roc_auc_score(r["target"], r["preds"])
+    print(cv_score)
+    with open(metrics_path / "l1_resnet_cv.metric", "w") as f:
+        f.write(f"OOF CV AUC: {cv_score:.4f}")
+
+    # TODO: train model on entire dataset
+    print("Train classifier on entire training dataset...")
+    model = MyModel(hparams=hparams, train_df=folds, valid_df=valid_df)
     trainer = Trainer(
         gpus=1,
-        max_epochs=epochs,  # train_percent_check=0.1, profiler=profiler
+        max_epochs=hparams.epochs,
+        # auto_lr_find="lr",
+        progress_bar_refresh_rate=0,
+        limit_val_batches=0,
     )
+    trainer.fit(model)
 
-    if train:
-        print("Train classifier...")
-        trainer.fit(model)
+    trainer.save_checkpoint(model_fpath)
 
-        print("Persisting model to disk...")
-        trainer.save_checkpoint(model_fpath)
+    if create_submission:
+        print("Making predictions on test data...")
+        # model.load_from_checkpoint(model_fpath)
+        model.freeze()
 
-    print("Making predictions on test data...")
-    model.load_from_checkpoint(model_fpath)
-    model.freeze()
+        y_preds = predict(model)
 
-    # TODO: move this inside Model and maybe find a way to keep it in sync with
-    # the transformations we make on the validation set
-    transform = Compose(
-        [
-            Resize((128, 128)),
-            ToTensor(),
-            Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ]
-    )
-    test_ds = MelanomaDataset(
-        csv_fpath=data_path / "test.csv",
-        images_path=test_img_224_path,
-        transform=transform,
-        train=False,
-    )
-    test_dl = DataLoader(test_ds, batch_size=bs, shuffle=False, num_workers=8,)
-    results: List[torch.Tensor] = list()
-    for batch_num, data in enumerate(test_dl):
-        data = data.to("cuda")
-        results.append(model(data))
-    y_preds = torch.cat(results, axis=0)
-
-    prepare_submission(
-        y_preds=y_preds.cpu().numpy().squeeze(),
-        fname=f"{arch}_submission.csv",
-    )
+        prepare_submission(
+            y_preds=y_preds.cpu().numpy().squeeze(),
+            fname="l1_resnet_predictions.csv",
+        )
 
 
 def dict_to_args(d):
@@ -115,5 +203,54 @@ def show_moles(images):
     plt.imshow(grid.numpy().transpose((1, 2, 0)))
 
 
+def split_train_test_using_stratigy_group_k_fold(df):
+    """Split train/valid set."""
+    train_df = df
+
+    patient_ids = train_df["patient_id"].unique()
+    patient_means = train_df.groupby(["patient_id"])["target"].mean()
+
+    # split at patient_id level
+    train_idx, val_idx = train_test_split(
+        np.arange(len(patient_ids)),
+        stratify=(patient_means > 0),
+        test_size=0.2,  # validation set size
+    )
+
+    train_patient_ids = patient_ids[train_idx]
+    train = train_df[train_df.patient_id.isin(train_patient_ids)].reset_index()
+
+    valid_patient_ids = patient_ids[val_idx]
+    valid = train_df[train_df.patient_id.isin(valid_patient_ids)].reset_index()
+
+    assert train_df.shape[0] == train.shape[0] + valid.shape[0]
+
+    return train, valid
+
+
+def predict(model):
+    # TODO: move this inside LightningModule
+    transform = Compose(
+        [
+            Resize(height=128, width=128),
+            Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ToTensor(),
+        ]
+    )
+    test_df = pd.read_csv(test_fpath)
+    test_ds = MelanomaDataset(
+        df=test_df,
+        images_path=test_img_224_path,
+        transform=transform,
+        train_or_valid=False,
+    )
+    test_dl = DataLoader(test_ds, batch_size=bs, shuffle=False, num_workers=8,)
+    results: List[torch.Tensor] = list()
+    for batch_num, data in enumerate(test_dl):
+        data = data.to("cuda")
+        results.append(model(data))
+    return torch.cat(results, axis=0)
+
+
 if __name__ == "__main__":
-    main(train=True)
+    main(crossvalidate=True, create_submission=True)
