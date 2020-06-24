@@ -1,28 +1,20 @@
 import os
 from pathlib import Path
 
-import pandas as pd
 import numpy as np
-
+import pandas as pd
 import torch
 import torch.nn as nn
 import torchvision.models as models
+from albumentations.augmentations.transforms import Flip, Normalize, Resize
+from albumentations.core.composition import Compose
+from albumentations.pytorch import ToTensor
 from PIL import Image
 from pytorch_lightning.core.lightning import LightningModule
 from sklearn.metrics import roc_auc_score
 from torch.utils.data import DataLoader, Dataset
-from albumentations.core.composition import Compose
-from albumentations.augmentations.transforms import (
-    Normalize,
-    Resize,
-    Flip,
-)
-from albumentations.pytorch import ToTensor
 
-from siim_isic_melanoma_classification.constants import (
-    data_path,
-    train_img_224_path,
-)
+from siim_isic_melanoma_classification.constants import train_img_224_path
 
 
 class MyModel(LightningModule):
@@ -146,7 +138,10 @@ class MyModel(LightningModule):
         print(
             f"Epoch {self.current_epoch}: {avg_loss:.2f}, auc: {auc_roc:.4f}"
         )
-        return {"avg_val_loss": avg_loss, "log": tensorboard_logs}
+        return {
+            "avg_val_loss": avg_loss,
+            "log": tensorboard_logs,
+        }
 
 
 class MelanomaDataset(Dataset):

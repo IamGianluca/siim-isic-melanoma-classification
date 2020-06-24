@@ -2,46 +2,37 @@ import argparse
 from typing import List
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import torch
 import torchvision.utils as utils
-from pytorch_lightning import Trainer
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import roc_auc_score
-from torch.utils.data import DataLoader
-import numpy as np
-
+from albumentations.augmentations.transforms import Normalize, Resize
 from albumentations.core.composition import Compose
-from albumentations.augmentations.transforms import (
-    Normalize,
-    Resize,
-)
 from albumentations.pytorch import ToTensor
+from pytorch_lightning import Trainer
+from sklearn.metrics import roc_auc_score
+from sklearn.model_selection import train_test_split
+from torch.utils.data import DataLoader
+
 from siim_isic_melanoma_classification.cnn import MelanomaDataset, MyModel
 from siim_isic_melanoma_classification.constants import (
     data_path,
-    models_path,
-    train_img_224_path,
-    test_img_224_path,
     folds_fpath,
-)
-from siim_isic_melanoma_classification.model_selection import (
-    stratified_group_k_fold,
-)
-from siim_isic_melanoma_classification.submit import prepare_submission
-from siim_isic_melanoma_classification.constants import (
     metrics_path,
+    models_path,
     submissions_path,
     test_fpath,
+    test_img_224_path,
+    train_img_224_path,
 )
-
+from siim_isic_melanoma_classification.submit import prepare_submission
 
 arch = "resnet34"
 sz = 128
 bs = 400
 lr = 1e-4
 mom = 0.9
-epochs = 2  # TODO: 3 is okay for resnet18, but resnet34 starts to overfit after 2 epochs without any data augmentation
+epochs = 2
 
 model_fpath = models_path / f"stage1_{arch}.pth"
 
@@ -66,12 +57,8 @@ def main(create_submission: bool = True, crossvalidate: bool = True):
 
         oof_predictions = list()
         for fold_number in range(n_folds):
-            train_val = folds[folds.fold != fold_number].reset_index(drop=True)
-            test_df = folds[folds.fold == fold_number].reset_index(drop=True)
-
-            # split train/val set
-            train_df, valid_df = split_train_test_using_stratigy_group_k_fold(
-                train_val
+            train_df, valid_df, test_df = train_val_test_split(
+                folds, fold_number
             )
 
             # train model and report valid scores progress during training
@@ -79,10 +66,7 @@ def main(create_submission: bool = True, crossvalidate: bool = True):
                 hparams=hparams, train_df=train_df, valid_df=valid_df
             )
             trainer = Trainer(
-                gpus=1,
-                max_epochs=hparams.epochs,
-                # auto_lr_find="lr",
-                progress_bar_refresh_rate=0,
+                gpus=1, max_epochs=hparams.epochs, progress_bar_refresh_rate=0,
             )
             trainer.fit(model)
 
@@ -136,7 +120,7 @@ def main(create_submission: bool = True, crossvalidate: bool = True):
 
     # use OOF predictions to compute CV AUC
     cv_score = roc_auc_score(r["target"], r["preds"])
-    print(cv_score)
+    print(f"{cv_score:.4f}")
     with open(metrics_path / "l1_resnet_cv.metric", "w") as f:
         f.write(f"OOF CV AUC: {cv_score:.4f}")
 
@@ -165,6 +149,17 @@ def main(create_submission: bool = True, crossvalidate: bool = True):
             y_preds=y_preds.cpu().numpy().squeeze(),
             fname="l1_resnet_predictions.csv",
         )
+
+
+def train_val_test_split(folds, fold_number):
+    train_val = folds[folds.fold != fold_number].reset_index(drop=True)
+    test_df = folds[folds.fold == fold_number].reset_index(drop=True)
+
+    # split train/val set
+    train_df, valid_df = split_train_test_using_stratigy_group_k_fold(
+        train_val
+    )
+    return train_df, valid_df, test_df
 
 
 def dict_to_args(d):
