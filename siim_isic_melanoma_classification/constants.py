@@ -3,7 +3,10 @@ from pathlib import Path
 N_TRAIN = 33_126
 N_TEST = 10_982
 
-path = Path(".")
+path = Path("/home/gianluca/git/kaggle/siim-isic-melanoma-classification")
+
+params_fpath = path / "params.yaml"
+
 data_path = path / "data"
 train_img_path = data_path / "train"
 test_img_path = data_path / "test"

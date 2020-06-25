@@ -1,20 +1,30 @@
 import os
+from typing import List
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torchvision.models as models
-from albumentations.augmentations.transforms import Flip, Normalize, Resize
+from albumentations.augmentations.transforms import (
+    Flip,
+    Normalize,
+    Resize,
+    ShiftScaleRotate,
+)
 from albumentations.core.composition import Compose
-from albumentations.pytorch import ToTensor
+from albumentations.pytorch import ToTensorV2
 from PIL import Image
 from pytorch_lightning.core.lightning import LightningModule
+from pytorch_lightning.metrics.functional import auroc
 from sklearn.metrics import roc_auc_score
 from torch.utils.data import DataLoader, Dataset
 
 from siim_isic_melanoma_classification.constants import train_img_224_path
+from torch.utils.data.sampler import WeightedRandomSampler
+from sklearn.utils.class_weight import compute_class_weight
 
 
 class MyModel(LightningModule):
@@ -25,6 +35,7 @@ class MyModel(LightningModule):
         self.hparams = hparams
         self.train_df = train_df
         self.valid_df = valid_df
+        self.lr = hparams.lr
 
         if "resnet" not in self.hparams.arch:
             raise ValueError(
@@ -34,7 +45,7 @@ class MyModel(LightningModule):
         image_modules = list(original_model.children())[
             :-1
         ]  # keep all layers except last one
-        self.headless_resnet = nn.Sequential(*image_modules)
+        self.backbone = nn.Sequential(*image_modules)
         self.fc = nn.Linear(
             in_features=original_model.fc.in_features,
             out_features=1,
@@ -42,44 +53,100 @@ class MyModel(LightningModule):
         )
 
     def train_dataloader(self):
-        transform = Compose(
+        augmentations = Compose(
             [
                 Resize(height=self.hparams.sz, width=self.hparams.sz),
-                Flip(),
                 Normalize(
                     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
                 ),
-                ToTensor(),
+                ShiftScaleRotate(),
+                Flip(p=0.5),
+                ToTensorV2(),
             ]
         )
         train_ds = MelanomaDataset(
             df=self.train_df,
             images_path=train_img_224_path,
-            transform=transform,
+            augmentations=augmentations,
             train_or_valid=True,
         )
+        # target = self.train_df["target"]
+
+        # cls_weights = torch.from_numpy(
+        #     compute_class_weight(
+        #         class_weight="balanced", classes=np.unique(target), y=target
+        #     )
+        # )
+        # weights = cls_weights[target]
+        # sampler = WeightedRandomSampler(weights, len(target), replacement=True)
+
         return DataLoader(
             train_ds,
+            # sampler=sampler,
             batch_size=self.hparams.bs,
             shuffle=True,
             num_workers=os.cpu_count(),
             pin_memory=False,
         )
 
+    def forward(self, x):
+        x = self.backbone(x)
+        x = torch.flatten(x, 1)
+        x = self.fc(x)
+        x = torch.sigmoid(x)
+        return x
+
+    def training_step(self, batch, batch_idx):
+        x, y_true = batch
+        y_pred = self(x).squeeze()
+        train_loss = self.loss_function(y_pred=y_pred, y_true=y_true)
+        return {"loss": train_loss, "y_pred": y_pred, "y_true": y_true}
+
+    def training_epoch_end(self, outputs: List):
+        train_loss = torch.cat(
+            [out["loss"].unsqueeze(dim=0) for out in outputs]
+        ).mean()
+        y_pred = torch.cat([out["y_pred"] for out in outputs], dim=0)
+        y_true = torch.cat([out["y_true"] for out in outputs], dim=0)
+        train_auc = auroc(y_pred, y_true)
+
+        logs = {"train_loss": train_loss, "train_auc": train_auc}
+        return {
+            "log": logs,
+        }
+
+    def configure_optimizers(self):
+        optimizer = torch.optim.AdamW(
+            self.parameters(), lr=self.lr, weight_decay=self.hparams.wd
+        )
+        scheduler = torch.optim.lr_scheduler.OneCycleLR(
+            optimizer,
+            max_lr=10 * self.lr,
+            epochs=self.hparams.epochs,
+            steps_per_epoch=len(self.train_dataloader()),
+        )
+        return [optimizer], [scheduler]
+
+    def loss_function(self, y_pred, y_true):
+        loss_fn = FocalLoss(logits=False)
+        y_true = y_true.float()
+        loss = loss_fn(y_pred, y_true)
+        return loss
+
     def val_dataloader(self):
-        transform = Compose(
+        augmentations = Compose(
             [
                 Resize(height=self.hparams.sz, width=self.hparams.sz),
                 Normalize(
                     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
                 ),
-                ToTensor(),
+                ToTensorV2(),
             ]
         )
         valid_ds = MelanomaDataset(
             df=self.valid_df,
             images_path=train_img_224_path,
-            transform=transform,
+            augmentations=augmentations,
             train_or_valid=True,
         )
         return DataLoader(
@@ -90,58 +157,53 @@ class MyModel(LightningModule):
             pin_memory=False,
         )
 
-    def configure_optimizers(self):
-        optimizer = torch.optim.Adam(
-            self.parameters(), lr=self.hparams.lr, weight_decay=3e-6
-        )
-        scheduler = torch.optim.lr_scheduler.OneCycleLR(
-            optimizer,
-            max_lr=10 * self.hparams.lr,
-            epochs=self.hparams.epochs,
-            steps_per_epoch=len(self.train_dataloader()),
-        )
-        return [optimizer], [scheduler]
-
-    def forward(self, x):
-        x = self.headless_resnet(x)
-        x = torch.flatten(x, 1)
-        x = self.fc(x)
-        x = torch.sigmoid(x)
-        return x
-
-    def training_step(self, batch, batch_idx):
-        x, y = batch
-        y_hat = self(x).squeeze()
-        loss = nn.BCELoss()(y_hat.double(), y.double())
-        return {"loss": loss}
-
     def validation_step(self, batch, batch_idx):
-        # something is wrong here
-        x, y = batch
-        y_hat = self(x).squeeze()
-        loss = nn.BCELoss()(y_hat.double().squeeze(), y.double())
-        return {"val_loss": loss, "probs": y_hat, "gt": y}
+        x, y_true = batch
+        y_pred = self(x).squeeze()
+        loss = self.loss_function(y_pred=y_pred, y_true=y_true)
+        return {"val_loss": loss, "y_pred": y_pred, "y_true": y_true}
 
-    def validation_epoch_end(self, outputs):
-        avg_loss = torch.cat(
+    def validation_epoch_end(self, outputs: List):
+        val_loss = torch.cat(
             [out["val_loss"].unsqueeze(dim=0) for out in outputs]
         ).mean()
-        probs = torch.cat([out["probs"] for out in outputs], dim=0)
-        gt = torch.cat([out["gt"] for out in outputs], dim=0)
+        y_pred = torch.cat([out["y_pred"] for out in outputs], dim=0)
+        y_true = torch.cat([out["y_true"] for out in outputs], dim=0)
+        val_auc = auroc(y_pred, y_true)
 
-        # move to CPU since we are using sklearn function to compute AUC:w
-        probs = probs.detach().cpu().numpy()
-        gt = gt.detach().cpu().numpy()
-
-        auc_roc = torch.tensor(roc_auc_score(gt, probs))
-        tensorboard_logs = {"val_loss": avg_loss, "auc": auc_roc}
+        logs = {"val_loss": val_loss, "val_auc": val_auc}
         print(
-            f"Epoch {self.current_epoch}: {avg_loss:.2f}, auc: {auc_roc:.4f}"
+            f"Epoch {self.current_epoch} // val loss: {val_loss:.4f}, val auc: {val_auc:.4f}, pos: {y_true.sum()}, neg: {len(y_true) - y_true.sum()}"
         )
         return {
-            "avg_val_loss": avg_loss,
-            "log": tensorboard_logs,
+            "log": logs,
         }
+
+
+class FocalLoss(nn.Module):
+    def __init__(self, alpha=1, gamma=2, logits=False, reduce=True):
+        super(FocalLoss, self).__init__()
+        self.alpha = alpha
+        self.gamma = gamma
+        self.logits = logits
+        self.reduce = reduce
+
+    def forward(self, inputs, targets):
+        if self.logits:
+            BCE_loss = F.binary_cross_entropy_with_logits(
+                inputs, targets, reduction="none"
+            )
+        else:
+            BCE_loss = F.binary_cross_entropy(
+                inputs, targets, reduction="none"
+            )
+        pt = torch.exp(-BCE_loss)
+        F_loss = self.alpha * (1 - pt) ** self.gamma * BCE_loss
+
+        if self.reduce:
+            return torch.mean(F_loss)
+        else:
+            return F_loss
 
 
 class MelanomaDataset(Dataset):
@@ -150,7 +212,7 @@ class MelanomaDataset(Dataset):
         df: pd.DataFrame,
         images_path: Path,
         train_or_valid: bool,
-        transform=None,
+        augmentations=None,
     ):
         self.df = df
         self.length = self.df.shape[0]
@@ -161,19 +223,19 @@ class MelanomaDataset(Dataset):
             self.targets = self.df.loc[:, "target"]
         except KeyError:
             self.targets = None
-        self.transform = transform
+        self.augmentations = augmentations
 
     def __len__(self):
         return self.length
 
-    def __getitem__(self, idx):
-        img_fpath = self.images_path / f"{self.image_names[idx]}.jpg"
+    def __getitem__(self, item):
+        img_fpath = self.images_path / f"{self.image_names[item]}.jpg"
         image = np.array(Image.open(img_fpath))
 
-        if self.transform:
-            image = self.transform(image=image)["image"]
+        if self.augmentations:
+            image = self.augmentations(image=image)["image"]
 
         if self.train_or_valid:
-            return image, self.targets[idx]
+            return image, self.targets[item]
         else:
             return image
