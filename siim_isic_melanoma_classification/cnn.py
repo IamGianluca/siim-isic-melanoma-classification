@@ -1,5 +1,5 @@
 import os
-from typing import List
+from typing import List, Optional
 from pathlib import Path
 
 import numpy as np
@@ -29,13 +29,16 @@ from sklearn.utils.class_weight import compute_class_weight
 
 class MyModel(LightningModule):
     def __init__(
-        self, hparams, train_df: pd.DataFrame, valid_df: pd.DataFrame
+        self,
+        hparams,
+        train_df: Optional[pd.DataFrame] = None,
+        valid_df: Optional[pd.DataFrame] = None,
     ):
         super().__init__()
         self.hparams = hparams
         self.train_df = train_df
         self.valid_df = valid_df
-        self.lr = hparams.lr
+        self.lr = self.hparams.lr
 
         if "resnet" not in self.hparams.arch:
             raise ValueError(

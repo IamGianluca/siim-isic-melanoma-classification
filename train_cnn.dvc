@@ -1,7 +1,7 @@
-md5: 416a567fcd67a1076f455cdc542577ea
+md5: 9ad728ab894f591fd9c302c678215a3d
 cmd: python pipe/train_cnn.py
 deps:
-- md5: 7db8fe82ffebc78a90190d984ff4e364
+- md5: 8ec659e56c1b4892a205c0a989145639
   path: pipe/train_cnn.py
 - md5: 064485b55f26a26705f43ca123fc2141
   path: data/folds.csv
@@ -11,7 +11,7 @@ deps:
   path: data/test_224
 - md5: 90a1a5b724eb0cf2666fbd850d6f55b1
   path: data/test.csv
-- md5: 587a4f4d0692378dfa4119742b1955f7
+- md5: b90e9068fb0e94bd956a1f5b94da1f03
   path: siim_isic_melanoma_classification/cnn.py
 - path: params.yaml
   params:
@@ -24,12 +24,12 @@ deps:
       mom: 0.9
       wd: 0.01
 outs:
-- md5: bfd0fb2404f5072bf5473ed220a3abde
+- md5: 8997c7e3cb74a37d82f879f5d20123a5
   path: metrics/l1_resnet_cv.metric
   cache: false
   metric: true
   persist: false
-- md5: 88bcd2e8f03a1e1c25b1f7204a23bb7a
+- md5: d73c36a6b9ac3b15af64ca0bc3fc0cd7
   path: data/l1_resnet_oof_predictions.csv
   cache: true
   metric: false
