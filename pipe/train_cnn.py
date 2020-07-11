@@ -1,4 +1,3 @@
-import argparse
 from typing import List
 
 import matplotlib.pyplot as plt
@@ -8,8 +7,10 @@ import torch
 import torchvision.utils as utils
 from albumentations.augmentations.transforms import Normalize, Resize
 from albumentations.core.composition import Compose
-from albumentations.pytorch import ToTensor
+from albumentations.pytorch import ToTensorV2
 from pytorch_lightning import Trainer
+from pytorch_lightning.core.saving import load_hparams_from_yaml
+from pytorch_lightning.loggers import MLFlowLogger
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
@@ -20,90 +21,81 @@ from siim_isic_melanoma_classification.constants import (
     folds_fpath,
     metrics_path,
     models_path,
-    submissions_path,
+    params_fpath,
     test_fpath,
     test_img_224_path,
     train_img_224_path,
 )
 from siim_isic_melanoma_classification.submit import prepare_submission
+from siim_isic_melanoma_classification.utils import dict_to_args
 
-arch = "resnet34"
-sz = 128
-bs = 400
-lr = 1e-4
-mom = 0.9
-epochs = 2
+params = load_hparams_from_yaml(params_fpath)
+hparams = dict_to_args(params["train"])
 
-model_fpath = models_path / f"stage1_{arch}.pth"
+model_fpath = models_path / f"stage1_{hparams.arch}.pth"
+logger = MLFlowLogger("logs/")
 
 
-def main(create_submission: bool = True, crossvalidate: bool = True):
-    hparams = dict_to_args(
-        {
-            "arch": arch,
-            "epochs": epochs,
-            "sz": sz,
-            "bs": bs,
-            "lr": lr,
-            "mom": mom,
-        }
-    )
+def main(create_submission: bool = True):
+    # NOTE: we are not going to save the parameters of our DL model here.
+    # We are only trying to assess how good the model is
+    folds = pd.read_csv(folds_fpath)
+    n_folds = folds.fold.nunique()
 
-    if crossvalidate:
-        # NOTE: we are not going to save the parameters of our DL model here.
-        # We are only trying to assess how good the model is
-        folds = pd.read_csv(folds_fpath)
-        n_folds = folds.fold.nunique()
+    oof_preds = list()
+    for fold_number in range(n_folds):
+        train_df, test_df = split_train_test_sets(folds, fold_number)
 
-        oof_predictions = list()
-        for fold_number in range(n_folds):
-            train_df, valid_df, test_df = train_val_test_split(
-                folds, fold_number
-            )
+        # train model and report valid scores progress during training
+        model = MyModel(hparams=hparams, train_df=train_df, valid_df=test_df)
+        trainer = Trainer(
+            gpus=1,
+            max_epochs=hparams.epochs,
+            auto_lr_find=True,
+            progress_bar_refresh_rate=0,
+            # overfit_batches=1,
+            logger=logger,
+        )
+        trainer.fit(model)
 
-            # train model and report valid scores progress during training
-            model = MyModel(
-                hparams=hparams, train_df=train_df, valid_df=valid_df
-            )
-            trainer = Trainer(
-                gpus=1, max_epochs=hparams.epochs, progress_bar_refresh_rate=0,
-            )
-            trainer.fit(model)
+        # make predictions on OOF data
+        # TODO: move into MyModel to avoid duplication and possible synching
+        # issues
+        augmentations = Compose(
+            [
+                Resize(height=hparams.sz, width=hparams.sz),
+                Normalize(
+                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                ),
+                ToTensorV2(),
+            ]
+        )
+        test_ds = MelanomaDataset(
+            df=test_df,
+            images_path=train_img_224_path,
+            augmentations=augmentations,
+            train_or_valid=False,
+        )
+        test_dl = DataLoader(
+            test_ds, batch_size=hparams.bs, shuffle=False, num_workers=8,
+        )
 
-            # make predictions on OOF data
-            transform = Compose(
-                [
-                    Resize(height=128, width=128),
-                    Normalize(
-                        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-                    ),
-                    ToTensor(),
-                ]
-            )
-            test_ds = MelanomaDataset(
-                df=test_df,
-                images_path=train_img_224_path,
-                transform=transform,
-                train_or_valid=False,
-            )
-            test_dl = DataLoader(
-                test_ds, batch_size=int(bs / 4), shuffle=False, num_workers=8,
-            )
+        results: List[np.ndarray] = list()
+        model.freeze()
+        model.to("cuda")
 
-            results: List[np.ndarray] = list()
-            model.freeze()
-            for batch_num, data in enumerate(test_dl):
-                data = data.to("cuda")
-                results.append(model(data).to("cpu").numpy().squeeze())
-            preds = np.concatenate(results, axis=0)
+        for batch_num, data in enumerate(test_dl):
+            data = data.to("cuda")
+            results.append(model(data).cpu().numpy().reshape(-1,))
+        preds = np.concatenate(results, axis=0)
 
-            # store OOF predictions
-            preds = pd.DataFrame(
-                {"image_name": test_df.image_name, "preds": preds}
-            )
-            oof_predictions.append(preds)
+        # store OOF predictions
+        preds = pd.DataFrame(
+            {"image_name": test_df.image_name, "preds": preds}
+        )
+        oof_preds.append(preds)
 
-    oof_preds = pd.concat(oof_predictions).reset_index()
+    oof_preds = pd.concat(oof_preds).reset_index()
 
     # sort OOF predictions
     y_true = train_df.loc[:, ["image_name", "target"]]
@@ -120,65 +112,41 @@ def main(create_submission: bool = True, crossvalidate: bool = True):
 
     # use OOF predictions to compute CV AUC
     cv_score = roc_auc_score(r["target"], r["preds"])
-    print(f"{cv_score:.4f}")
+    print(f"OOF CV AUC:{cv_score:.4f}")
     with open(metrics_path / "l1_resnet_cv.metric", "w") as f:
         f.write(f"OOF CV AUC: {cv_score:.4f}")
 
-    # TODO: train model on entire dataset
-    print("Train classifier on entire training dataset...")
-    model = MyModel(hparams=hparams, train_df=folds, valid_df=valid_df)
-    trainer = Trainer(
-        gpus=1,
-        max_epochs=hparams.epochs,
-        # auto_lr_find="lr",
-        progress_bar_refresh_rate=0,
-        limit_val_batches=0,
-    )
-    trainer.fit(model)
+    # # train model on entire dataset
+    # print("Train classifier on entire training dataset...")
+    # model = MyModel(hparams=hparams, train_df=folds, valid_df=valid_df)
+    # trainer = Trainer(
+    #     gpus=1,
+    #     max_epochs=hparams.epochs,
+    #     # auto_lr_find="lr",
+    #     progress_bar_refresh_rate=0,
+    #     limit_val_batches=0,
+    # )
+    # trainer.fit(model)
 
-    trainer.save_checkpoint(model_fpath)
+    # trainer.save_checkpoint(model_fpath)
 
-    if create_submission:
-        print("Making predictions on test data...")
-        # model.load_from_checkpoint(model_fpath)
-        model.freeze()
+    # if create_submission:
+    #     print("Making predictions on test data...")
+    #     # model.load_from_checkpoint(model_fpath)
+    #     model.freeze()
 
-        y_preds = predict(model)
+    #     y_preds = predict(model)
 
-        prepare_submission(
-            y_preds=y_preds.cpu().numpy().squeeze(),
-            fname="l1_resnet_predictions.csv",
-        )
+    #     prepare_submission(
+    #         y_preds=y_preds.cpu().numpy().squeeze(),
+    #         fname="l1_resnet_predictions.csv",
+    #     )
 
 
-def train_val_test_split(folds, fold_number):
-    train_val = folds[folds.fold != fold_number].reset_index(drop=True)
+def split_train_test_sets(folds, fold_number):
+    train_df = folds[folds.fold != fold_number].reset_index(drop=True)
     test_df = folds[folds.fold == fold_number].reset_index(drop=True)
-
-    # split train/val set
-    train_df, valid_df = split_train_test_using_stratigy_group_k_fold(
-        train_val
-    )
-    return train_df, valid_df, test_df
-
-
-def dict_to_args(d):
-    args = argparse.Namespace()
-
-    def dict_to_args_recursive(args, d, prefix=""):
-        for k, v in d.items():
-            if type(v) == dict:
-                dict_to_args_recursive(args, v, prefix=k)
-            elif type(v) in [tuple, list]:
-                continue
-            else:
-                if prefix:
-                    args.__setattr__(prefix + "_" + k, v)
-                else:
-                    args.__setattr__(k, v)
-
-    dict_to_args_recursive(args, d)
-    return args
+    return train_df, test_df
 
 
 def plot_a_batch(train_dl: DataLoader):
@@ -193,7 +161,7 @@ def plot_a_batch(train_dl: DataLoader):
 
 
 def show_moles(images):
-    images, _ = images["image"], images["label"]
+    images, _ = images[0], images[1]
     grid = utils.make_grid(images)
     plt.imshow(grid.numpy().transpose((1, 2, 0)))
 
@@ -206,7 +174,7 @@ def split_train_test_using_stratigy_group_k_fold(df):
     patient_means = train_df.groupby(["patient_id"])["target"].mean()
 
     # split at patient_id level
-    train_idx, val_idx = train_test_split(
+    train_idx, val_idx = split_train_test_sets(
         np.arange(len(patient_ids)),
         stratify=(patient_means > 0),
         test_size=0.2,  # validation set size
@@ -225,21 +193,23 @@ def split_train_test_using_stratigy_group_k_fold(df):
 
 def predict(model):
     # TODO: move this inside LightningModule
-    transform = Compose(
+    augmentations = Compose(
         [
-            Resize(height=128, width=128),
+            Resize(height=hparams.sz, width=hparams.sz),
             Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-            ToTensor(),
+            ToTensorV2(),
         ]
     )
     test_df = pd.read_csv(test_fpath)
     test_ds = MelanomaDataset(
         df=test_df,
         images_path=test_img_224_path,
-        transform=transform,
+        augmentations=augmentations,
         train_or_valid=False,
     )
-    test_dl = DataLoader(test_ds, batch_size=bs, shuffle=False, num_workers=8,)
+    test_dl = DataLoader(
+        test_ds, batch_size=hparams.bs, shuffle=False, num_workers=8,
+    )
     results: List[torch.Tensor] = list()
     for batch_num, data in enumerate(test_dl):
         data = data.to("cuda")
@@ -248,4 +218,4 @@ def predict(model):
 
 
 if __name__ == "__main__":
-    main(crossvalidate=True, create_submission=True)
+    main(create_submission=True)
