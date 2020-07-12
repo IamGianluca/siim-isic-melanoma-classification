@@ -9,8 +9,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.models as models
 from albumentations.augmentations.transforms import (
+    CoarseDropout,
     Flip,
+    GridDistortion,
     Normalize,
+    RandomBrightnessContrast,
+    RandomResizedCrop,
     Resize,
     ShiftScaleRotate,
 )
@@ -59,11 +63,25 @@ class MyModel(LightningModule):
         augmentations = Compose(
             [
                 Resize(height=self.hparams.sz, width=self.hparams.sz),
-                Normalize(
-                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                RandomResizedCrop(
+                    height=self.hparams.sz,
+                    width=self.hparams.sz,
+                    scale=(0.7, 1.0),
                 ),
+                #         ToGray(),
+                GridDistortion(),
+                RandomBrightnessContrast(),
                 ShiftScaleRotate(),
                 Flip(p=0.5),
+                CoarseDropout(
+                    max_height=int(self.hparams.sz / 10),
+                    max_width=int(self.hparams.sz / 10),
+                ),
+                Normalize(
+                    mean=[0.485, 0.456, 0.406],
+                    std=[0.229, 0.224, 0.225],
+                    max_pixel_value=255,
+                ),
                 ToTensorV2(),
             ]
         )

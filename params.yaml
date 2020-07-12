@@ -2,7 +2,7 @@ split:
         folds: 5
 
 train:
-        epochs: 5
+        epochs: 30
         arch: "resnet34"
         sz: 128
         bs: 400
