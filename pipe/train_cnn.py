@@ -28,6 +28,7 @@ from siim_isic_melanoma_classification.constants import (
 )
 from siim_isic_melanoma_classification.submit import prepare_submission
 from siim_isic_melanoma_classification.utils import dict_to_args
+from pytorch_lightning.callbacks import ModelCheckpoint
 
 params = load_hparams_from_yaml(params_fpath)
 hparams = dict_to_args(params["train"])
@@ -37,8 +38,6 @@ logger = MLFlowLogger("logs/")
 
 
 def main(create_submission: bool = True):
-    # NOTE: we are not going to save the parameters of our DL model here.
-    # We are only trying to assess how good the model is
     folds = pd.read_csv(folds_fpath)
     n_folds = folds.fold.nunique()
 
@@ -47,14 +46,18 @@ def main(create_submission: bool = True):
         train_df, test_df = split_train_test_sets(folds, fold_number)
 
         # train model and report valid scores progress during training
+        checkpoint_callback = ModelCheckpoint(
+            filepath=models_path, monitor="val_loss", mode="min"
+        )
         model = MyModel(hparams=hparams, train_df=train_df, valid_df=test_df)
         trainer = Trainer(
             gpus=1,
             max_epochs=hparams.epochs,
             auto_lr_find=True,
             progress_bar_refresh_rate=0,
-            # overfit_batches=1,
+            # overfit_batches=5,
             logger=logger,
+            checkpoint_callback=checkpoint_callback,
         )
         trainer.fit(model)
 
@@ -81,6 +84,12 @@ def main(create_submission: bool = True):
         )
 
         results: List[np.ndarray] = list()
+
+        # load best weights for this fold
+        model = MyModel.load_from_checkpoint(
+            checkpoint_callback.best_model_path
+        )
+
         model.freeze()
         model.to("cuda")
 
@@ -112,6 +121,7 @@ def main(create_submission: bool = True):
 
     # use OOF predictions to compute CV AUC
     cv_score = roc_auc_score(r["target"], r["preds"])
+    logger.log_metrics({"oof_cv_auc": cv_score})
     print(f"OOF CV AUC:{cv_score:.4f}")
     with open(metrics_path / "l1_resnet_cv.metric", "w") as f:
         f.write(f"OOF CV AUC: {cv_score:.4f}")
