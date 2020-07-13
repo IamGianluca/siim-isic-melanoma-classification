@@ -1,9 +1,22 @@
 /data
+/nbs
+
+# dev environment
 .venv
 .vim
+
+# cache
 .mypy_cache
+
+# build
 __pycache__
 *.egg-info
-/lightning_logs
+
+# half-precision training
 /apex
+
+# logs
+/lightning_logs
 /logs
+/mlruns
+/1

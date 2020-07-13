@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -25,6 +25,7 @@ from siim_isic_melanoma_classification.constants import (
     test_fpath,
     test_img_224_path,
     train_img_224_path,
+    submissions_path,
 )
 from siim_isic_melanoma_classification.submit import prepare_submission
 from siim_isic_melanoma_classification.utils import dict_to_args
@@ -42,72 +43,15 @@ def main(create_submission: bool = True):
     n_folds = folds.fold.nunique()
 
     oof_preds = list()
+    weight_fpaths = list()
     for fold_number in range(n_folds):
-        train_df, test_df = split_train_test_sets(folds, fold_number)
-
-        # train model and report valid scores progress during training
-        checkpoint_callback = ModelCheckpoint(
-            filepath=models_path, monitor="val_loss", mode="min"
-        )
-        model = MyModel(hparams=hparams, train_df=train_df, valid_df=test_df)
-        trainer = Trainer(
-            gpus=1,
-            max_epochs=hparams.epochs,
-            auto_lr_find=True,
-            progress_bar_refresh_rate=0,
-            # overfit_batches=5,
-            logger=logger,
-            checkpoint_callback=checkpoint_callback,
-        )
-        trainer.fit(model)
-
-        # make predictions on OOF data
-        # TODO: move into MyModel to avoid duplication and possible synching
-        # issues
-        augmentations = Compose(
-            [
-                Resize(height=hparams.sz, width=hparams.sz),
-                Normalize(
-                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-                ),
-                ToTensorV2(),
-            ]
-        )
-        test_ds = MelanomaDataset(
-            df=test_df,
-            images_path=train_img_224_path,
-            augmentations=augmentations,
-            train_or_valid=False,
-        )
-        test_dl = DataLoader(
-            test_ds, batch_size=hparams.bs, shuffle=False, num_workers=8,
-        )
-
-        results: List[np.ndarray] = list()
-
-        # load best weights for this fold
-        model = MyModel.load_from_checkpoint(
-            checkpoint_callback.best_model_path
-        )
-
-        model.freeze()
-        model.to("cuda")
-
-        for batch_num, data in enumerate(test_dl):
-            data = data.to("cuda")
-            results.append(model(data).cpu().numpy().reshape(-1,))
-        preds = np.concatenate(results, axis=0)
-
-        # store OOF predictions
-        preds = pd.DataFrame(
-            {"image_name": test_df.image_name, "preds": preds}
-        )
+        preds, weight_fpath = train(fold_number=fold_number, folds=folds)
         oof_preds.append(preds)
-
+        weight_fpaths.append(weight_fpath)
     oof_preds = pd.concat(oof_preds).reset_index()
 
     # sort OOF predictions
-    y_true = train_df.loc[:, ["image_name", "target"]]
+    y_true = folds.loc[:, ["image_name", "target"]]
     r = pd.merge(
         y_true,
         oof_preds,
@@ -126,37 +70,122 @@ def main(create_submission: bool = True):
     with open(metrics_path / "l1_resnet_cv.metric", "w") as f:
         f.write(f"OOF CV AUC: {cv_score:.4f}")
 
-    # # train model on entire dataset
-    # print("Train classifier on entire training dataset...")
-    # model = MyModel(hparams=hparams, train_df=folds, valid_df=valid_df)
-    # trainer = Trainer(
-    #     gpus=1,
-    #     max_epochs=hparams.epochs,
-    #     # auto_lr_find="lr",
-    #     progress_bar_refresh_rate=0,
-    #     limit_val_batches=0,
-    # )
-    # trainer.fit(model)
-
-    # trainer.save_checkpoint(model_fpath)
-
-    # if create_submission:
-    #     print("Making predictions on test data...")
-    #     # model.load_from_checkpoint(model_fpath)
-    #     model.freeze()
-
-    #     y_preds = predict(model)
-
-    #     prepare_submission(
-    #         y_preds=y_preds.cpu().numpy().squeeze(),
-    #         fname="l1_resnet_predictions.csv",
-    #     )
+    print("Making predictions on test data...")
+    preds = list()
+    for fold_number in range(n_folds):
+        weight_fpath = weight_fpaths[fold_number]
+        y_hat = predict(
+            fold_number=fold_number, folds=folds, weight_fpath=weight_fpath
+        )
+        preds.append(y_hat)
+    preds_df = pd.concat([p["preds"] for p in preds], axis=1).reset_index(
+        drop=True
+    )
+    predictions = preds_df.mean(axis=1)
+    prepare_submission(
+        y_preds=predictions, fname="l1_resnet_submission.csv",
+    )
 
 
 def split_train_test_sets(folds, fold_number):
     train_df = folds[folds.fold != fold_number].reset_index(drop=True)
     test_df = folds[folds.fold == fold_number].reset_index(drop=True)
     return train_df, test_df
+
+
+def train(folds: pd.DataFrame, fold_number: int) -> Tuple[pd.DataFrame, str]:
+    """Create OOF predictions for fold_number."""
+    train_df, test_df = split_train_test_sets(folds, fold_number)
+
+    # train model and report valid scores progress during training
+    checkpoint_callback = ModelCheckpoint(
+        filepath=models_path,
+        monitor="val_loss",
+        mode="min",
+        save_weights_only=True,
+    )
+    model = MyModel(hparams=hparams, train_df=train_df, valid_df=test_df)
+    trainer = Trainer(
+        gpus=1,
+        max_epochs=hparams.epochs,
+        auto_lr_find=True,
+        progress_bar_refresh_rate=0,
+        # overfit_batches=5,
+        logger=logger,
+        checkpoint_callback=checkpoint_callback,
+    )
+    trainer.fit(model)
+
+    # make predictions on OOF data
+    augmentations = Compose(
+        [
+            Resize(height=hparams.sz, width=hparams.sz),
+            Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ToTensorV2(),
+        ]
+    )
+    test_ds = MelanomaDataset(
+        df=test_df,
+        images_path=train_img_224_path,
+        augmentations=augmentations,
+        train_or_valid=False,
+    )
+    test_dl = DataLoader(
+        test_ds, batch_size=hparams.bs, shuffle=False, num_workers=8,
+    )
+
+    results: List[np.ndarray] = list()
+
+    # load best weights for this fold
+    model = MyModel.load_from_checkpoint(checkpoint_callback.best_model_path)
+
+    model.freeze()
+    model.to("cuda")
+
+    for batch_num, data in enumerate(test_dl):
+        data = data.to("cuda")
+        results.append(model(data).cpu().numpy().reshape(-1,))
+    preds = np.concatenate(results, axis=0)
+    preds_df = pd.DataFrame({"image_name": test_df.image_name, "preds": preds})
+    return preds_df, checkpoint_callback.best_model_path
+
+
+def predict(
+    folds: pd.DataFrame, fold_number: int, weight_fpath: str
+) -> pd.DataFrame:
+    test_df = pd.read_csv(test_fpath)
+    augmentations = Compose(
+        [
+            Resize(height=hparams.sz, width=hparams.sz),
+            Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ToTensorV2(),
+        ]
+    )
+    test_ds = MelanomaDataset(
+        df=test_df,
+        images_path=test_img_224_path,
+        augmentations=augmentations,
+        train_or_valid=False,
+    )
+    test_dl = DataLoader(
+        test_ds, batch_size=hparams.bs, shuffle=False, num_workers=8,
+    )
+
+    results: List[np.ndarray] = list()
+
+    # load best weights for this fold
+    print(f"loading model weights: {weight_fpath}")
+    model = MyModel.load_from_checkpoint(weight_fpath)
+
+    model.freeze()
+    model.to("cuda")
+
+    for batch_num, data in enumerate(test_dl):
+        data = data.to("cuda")
+        results.append(model(data).cpu().numpy().reshape(-1,))
+    preds = np.concatenate(results, axis=0)
+    preds_df = pd.DataFrame({"image_name": test_df.image_name, "preds": preds})
+    return preds_df
 
 
 def plot_a_batch(train_dl: DataLoader):
@@ -199,32 +228,6 @@ def split_train_test_using_stratigy_group_k_fold(df):
     assert train_df.shape[0] == train.shape[0] + valid.shape[0]
 
     return train, valid
-
-
-def predict(model):
-    # TODO: move this inside LightningModule
-    augmentations = Compose(
-        [
-            Resize(height=hparams.sz, width=hparams.sz),
-            Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-            ToTensorV2(),
-        ]
-    )
-    test_df = pd.read_csv(test_fpath)
-    test_ds = MelanomaDataset(
-        df=test_df,
-        images_path=test_img_224_path,
-        augmentations=augmentations,
-        train_or_valid=False,
-    )
-    test_dl = DataLoader(
-        test_ds, batch_size=hparams.bs, shuffle=False, num_workers=8,
-    )
-    results: List[torch.Tensor] = list()
-    for batch_num, data in enumerate(test_dl):
-        data = data.to("cuda")
-        results.append(model(data))
-    return torch.cat(results, axis=0)
 
 
 if __name__ == "__main__":
