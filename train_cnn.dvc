@@ -1,7 +1,7 @@
-md5: 937e92634151bfb2465c1d7929b4402d
+md5: ed7ad6deac567a9ea58875eb37aaec06
 cmd: python pipe/train_cnn.py
 deps:
-- md5: 8ec659e56c1b4892a205c0a989145639
+- md5: fba6ec2f6cb595f2adaaa1f2c07ed999
   path: pipe/train_cnn.py
 - md5: 064485b55f26a26705f43ca123fc2141
   path: data/folds.csv
@@ -24,13 +24,18 @@ deps:
       mom: 0.9
       wd: 0.01
 outs:
-- md5: cf7c58b27f3723d6c634e83aeb3d51be
+- md5: 7eb547155c4aecc3f4b4c4c2c4699ea2
   path: metrics/l1_resnet_cv.metric
   cache: false
   metric: true
   persist: false
-- md5: 0b97f2b80467ab36ac2a805a7b46f359
+- md5: d8a73f489537b842812ebabc0a99f40d
   path: data/l1_resnet_oof_predictions.csv
+  cache: true
+  metric: false
+  persist: false
+- md5: 4f9e540d015410a8465f47e6da197fac
+  path: subs/l1_resnet_submission.csv
   cache: true
   metric: false
   persist: false

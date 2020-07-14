@@ -12,16 +12,17 @@ from siim_isic_melanoma_classification.constants import (
     models_path,
 )
 from siim_isic_melanoma_classification.prepare import prepare_dataset
+from siim_isic_melanoma_classification.submit import prepare_submission
 
 
 def main():
     X_train, y_train = prepare_dataset(name="train")
 
-    XXX = list(range(32 * 32 * 3))
+    pixel_cols = list(range(32 * 32 * 3))
 
     tfms = make_column_transformer(
         # flattened image data
-        (StandardScaler(), XXX),
+        (StandardScaler(), pixel_cols),
         # other contextual features
         (
             SimpleImputer(
@@ -63,6 +64,15 @@ def main():
     # train model on entire training dataset
     pipe.fit(X=X_train, y=y_train)
     joblib.dump(pipe, models_path / "stage1_lr.joblib")
+
+    # predict on test data
+    X_test, _ = prepare_dataset(name="test")
+
+    sclf = joblib.load(models_path / "stage1_lr.joblib")
+    y_preds = sclf.predict_proba(X_test)
+
+    # prepare submission
+    prepare_submission(y_preds=y_preds[:, 1], fname="lr_submission.csv")
 
 
 if __name__ == "__main__":
