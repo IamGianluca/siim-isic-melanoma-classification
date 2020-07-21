@@ -48,15 +48,9 @@ class MyModel(LightningModule):
             raise ValueError(
                 "Not tested for architectures different from ResNet"
             )
-        original_model = models.__dict__[self.hparams.arch](pretrained=True)
-        image_modules = list(original_model.children())[
-            :-1
-        ]  # keep all layers except last one
-        self.backbone = nn.Sequential(*image_modules)
-        self.fc = nn.Linear(
-            in_features=original_model.fc.in_features,
-            out_features=1,
-            bias=True,
+        self.model = models.__dict__[self.hparams.arch](pretrained=True)
+        self.model.fc = nn.Linear(
+            in_features=self.model.fc.in_features, out_features=1, bias=True,
         )
 
     def train_dataloader(self):
@@ -111,9 +105,7 @@ class MyModel(LightningModule):
         )
 
     def forward(self, x):
-        x = self.backbone(x)
-        x = torch.flatten(x, 1)
-        x = self.fc(x)
+        x = self.model(x)
         x = torch.sigmoid(x)
         return x
 
