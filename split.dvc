@@ -1,12 +1,12 @@
-md5: 1298a3c37200013f7886bda8bd245e21
+md5: 3a115485fa09dff4b629c4d2a4c26a88
 cmd: python pipe/split.py
 deps:
-- md5: f0b4b50480648696678dd96a3e35a6f6
+- md5: 007d6c0e9e08a59cfa9094ba6b8b0d7f
   path: pipe/split.py
 - md5: 86657c7009b003543b377b62a8745b4c
   path: data/train.csv
 outs:
-- md5: 064485b55f26a26705f43ca123fc2141
+- md5: 3d876ccf7abaabfd0ddc338faa4b16e7
   path: data/folds.csv
   cache: true
   metric: false

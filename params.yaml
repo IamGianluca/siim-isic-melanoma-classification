@@ -2,11 +2,12 @@ split:
         folds: 5
 
 train:
-        epochs: 30
+        epochs: 10
         arch: "resnet34"
+        precision: 16
         sz: 128
-        bs: 480
-        lr: 0.0001
+        bs: 900
+        lr: 0.0003
         wd: 0.01
         mom: 0.9
 

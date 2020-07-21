@@ -108,9 +108,11 @@ def train(folds: pd.DataFrame, fold_number: int) -> Tuple[pd.DataFrame, str]:
     trainer = Trainer(
         gpus=1,
         max_epochs=hparams.epochs,
-        auto_lr_find=True,
+        # auto_lr_find=True,
         progress_bar_refresh_rate=0,
         # overfit_batches=5,
+        amp_level="O1",
+        precision=16,
         logger=logger,
         checkpoint_callback=checkpoint_callback,
     )
