@@ -44,10 +44,6 @@ class MyModel(LightningModule):
         self.valid_df = valid_df
         self.lr = self.hparams.lr
 
-        if "resnet" not in self.hparams.arch:
-            raise ValueError(
-                "Not tested for architectures different from ResNet"
-            )
         self.model = models.__dict__[self.hparams.arch](pretrained=True)
         self.model.fc = nn.Linear(
             in_features=self.model.fc.in_features, out_features=1, bias=True,
@@ -106,14 +102,17 @@ class MyModel(LightningModule):
 
     def forward(self, x):
         x = self.model(x)
-        x = torch.sigmoid(x)
         return x
 
     def training_step(self, batch, batch_idx):
         x, y_true = batch
-        y_pred = self(x).squeeze()
-        train_loss = self.loss_function(y_pred=y_pred, y_true=y_true)
-        return {"loss": train_loss, "y_pred": y_pred, "y_true": y_true}
+        y_pred = self(x).view(-1)
+        train_loss = self.loss_function(y_pred=y_pred, y_true=y_true.half())
+        return {
+            "loss": train_loss,
+            "y_pred": y_pred.half(),
+            "y_true": y_true.half(),
+        }
 
     def training_epoch_end(self, outputs: List):
         train_loss = torch.cat(
@@ -134,16 +133,17 @@ class MyModel(LightningModule):
         )
         scheduler = torch.optim.lr_scheduler.OneCycleLR(
             optimizer,
-            max_lr=10 * self.lr,
+            max_lr=self.lr * 10,
+            div_factor=10,
             epochs=self.hparams.epochs,
             steps_per_epoch=len(self.train_dataloader()),
         )
         return [optimizer], [scheduler]
 
     def loss_function(self, y_pred, y_true):
-        loss_fn = FocalLoss(logits=False)
+        loss_fn = FocalLoss(logits=True)
         y_true = y_true.float()
-        loss = loss_fn(y_pred, y_true)
+        loss = loss_fn(y_pred.half(), y_true.half())
         return loss
 
     def val_dataloader(self):
@@ -173,8 +173,8 @@ class MyModel(LightningModule):
     def validation_step(self, batch, batch_idx):
         x, y_true = batch
         y_pred = self(x).squeeze()
-        loss = self.loss_function(y_pred=y_pred, y_true=y_true)
-        return {"val_loss": loss, "y_pred": y_pred, "y_true": y_true}
+        loss = self.loss_function(y_pred=y_pred.half(), y_true=y_true.half())
+        return {"val_loss": loss, "y_pred": y_pred, "y_true": y_true.half()}
 
     def validation_epoch_end(self, outputs: List):
         val_loss = torch.cat(

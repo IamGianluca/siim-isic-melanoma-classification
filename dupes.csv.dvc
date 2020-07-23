@@ -1,0 +1,8 @@
+md5: 4b22f0c58bc469b574c1092710b4e3ee
+cmd: wget -O data/dupes.csv https://storage.googleapis.com/kaggle-forum-message-attachments/903372/16145/2020_Challenge_duplicates.csv
+outs:
+- md5: d66be798291024f1fd9811e5836bc7d7
+  path: data/dupes.csv
+  cache: true
+  metric: false
+  persist: false
