@@ -1,9 +1,9 @@
 import pandas as pd
 
 from siim_isic_melanoma_classification.constants import (
+    dupes_fpath,
     folds_fpath,
     train_fpath,
-    dupes_fpath,
 )
 from siim_isic_melanoma_classification.model_selection import (
     assign_fold_using_stratified_group_k_fold,
@@ -39,7 +39,7 @@ def main():
         df, group_var="patient_id", n_folds=5
     )
     print(df_with_folds.groupby("fold").target.mean())
-    df_with_folds.to_csv(folds_fpath)
+    df_with_folds.to_csv(folds_fpath, index=False)
 
 
 if __name__ == "__main__":
