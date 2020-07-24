@@ -1,7 +1,7 @@
 split:
         folds: 5
 
-train:
+train_resnet_128:
         epochs: 10
         arch: "resnet34"
         precision: 16
