@@ -1,6 +1,6 @@
 import os
-from typing import List, Optional
 from pathlib import Path
+from typing import List, Optional
 
 import numpy as np
 import pandas as pd
@@ -23,26 +23,36 @@ from albumentations.pytorch import ToTensorV2
 from PIL import Image
 from pytorch_lightning.core.lightning import LightningModule
 from pytorch_lightning.metrics.functional import auroc
-from sklearn.metrics import roc_auc_score
 from torch.utils.data import DataLoader, Dataset
-
-from siim_isic_melanoma_classification.constants import train_img_224_path
-from torch.utils.data.sampler import WeightedRandomSampler
-from sklearn.utils.class_weight import compute_class_weight
 
 
 class MyModel(LightningModule):
     def __init__(
         self,
         hparams,
+        fold: Optional[int] = None,
         train_df: Optional[pd.DataFrame] = None,
         valid_df: Optional[pd.DataFrame] = None,
+        test_df: Optional[pd.DataFrame] = None,
+        train_images_path: Optional[Path] = None,
+        valid_images_path: Optional[Path] = None,
+        test_images_path: Optional[Path] = None,
+        path: Optional[Path] = None,
     ):
         super().__init__()
+        self.path = path
         self.hparams = hparams
+        self.fold = fold
+
         self.train_df = train_df
         self.valid_df = valid_df
-        self.lr = self.hparams.lr
+        self.test_df = test_df
+
+        self.train_images_path = train_images_path
+        self.valid_images_path = valid_images_path
+        self.test_images_path = test_images_path
+
+        self.lr = self.hparams.lr  # NOTE: required for lr_finder
 
         self.model = models.__dict__[self.hparams.arch](pretrained=True)
         self.model.fc = nn.Linear(
@@ -77,20 +87,10 @@ class MyModel(LightningModule):
         )
         train_ds = MelanomaDataset(
             df=self.train_df,
-            images_path=train_img_224_path,
+            images_path=self.train_images_path,
             augmentations=augmentations,
             train_or_valid=True,
         )
-        # target = self.train_df["target"]
-
-        # cls_weights = torch.from_numpy(
-        #     compute_class_weight(
-        #         class_weight="balanced", classes=np.unique(target), y=target
-        #     )
-        # )
-        # weights = cls_weights[target]
-        # sampler = WeightedRandomSampler(weights, len(target), replacement=True)
-
         return DataLoader(
             train_ds,
             # sampler=sampler,
@@ -141,7 +141,7 @@ class MyModel(LightningModule):
         return [optimizer], [scheduler]
 
     def loss_function(self, y_pred, y_true):
-        loss_fn = FocalLoss(logits=True)
+        loss_fn = FocalLoss()
         y_true = y_true.float()
         loss = loss_fn(y_pred.half(), y_true.half())
         return loss
@@ -158,7 +158,7 @@ class MyModel(LightningModule):
         )
         valid_ds = MelanomaDataset(
             df=self.valid_df,
-            images_path=train_img_224_path,
+            images_path=self.valid_images_path,
             augmentations=augmentations,
             train_or_valid=True,
         )
@@ -170,9 +170,33 @@ class MyModel(LightningModule):
             pin_memory=False,
         )
 
+    def test_dataloader(self):
+        augmentations = Compose(
+            [
+                Resize(height=self.hparams.sz, width=self.hparams.sz),
+                Normalize(
+                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                ),
+                ToTensorV2(),
+            ]
+        )
+        test_ds = MelanomaDataset(
+            df=self.test_df,
+            images_path=self.test_images_path,
+            augmentations=augmentations,  # TODO: add TTA
+            train_or_valid=False,
+        )
+        return DataLoader(
+            test_ds,
+            batch_size=self.hparams.bs,
+            shuffle=False,
+            num_workers=os.cpu_count(),
+            pin_memory=False,
+        )
+
     def validation_step(self, batch, batch_idx):
         x, y_true = batch
-        y_pred = self(x).squeeze()
+        y_pred = self(x).squeeze().sigmoid()
         loss = self.loss_function(y_pred=y_pred.half(), y_true=y_true.half())
         return {"val_loss": loss, "y_pred": y_pred, "y_true": y_true.half()}
 
@@ -192,24 +216,31 @@ class MyModel(LightningModule):
             "log": logs,
         }
 
+    def test_step(self, batch, batch_idx):
+        x = batch
+        y_hat = self(x).squeeze().sigmoid()
+        return {"y_hat": y_hat}
+
+    def test_epoch_end(self, outputs):
+        y_hat = torch.cat([out["y_hat"] for out in outputs])
+        self.test_df["preds"] = y_hat.cpu().numpy()
+        self.test_df.loc[:, ["image_name", "preds"]].to_csv(
+            self.path, index=False
+        )
+        return {"tta": self.fold}
+
 
 class FocalLoss(nn.Module):
-    def __init__(self, alpha=1, gamma=2, logits=False, reduce=True):
+    def __init__(self, alpha=1, gamma=2, reduce=True):
         super(FocalLoss, self).__init__()
         self.alpha = alpha
         self.gamma = gamma
-        self.logits = logits
         self.reduce = reduce
 
     def forward(self, inputs, targets):
-        if self.logits:
-            BCE_loss = F.binary_cross_entropy_with_logits(
-                inputs, targets, reduction="none"
-            )
-        else:
-            BCE_loss = F.binary_cross_entropy(
-                inputs, targets, reduction="none"
-            )
+        BCE_loss = F.binary_cross_entropy_with_logits(
+            inputs, targets, reduction="none"
+        )
         pt = torch.exp(-BCE_loss)
         F_loss = self.alpha * (1 - pt) ** self.gamma * BCE_loss
 
