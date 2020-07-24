@@ -1,3 +1,5 @@
+import re
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -21,14 +23,17 @@ from siim_isic_melanoma_classification.constants import (
     test_img_224_path,
     train_img_224_path,
 )
-from siim_isic_melanoma_classification.submit import prepare_submission
 from siim_isic_melanoma_classification.utils import dict_to_args
 
 params = load_hparams_from_yaml(params_fpath)
-hparams = dict_to_args(params["train"])
-
-model_fpath = models_path / f"stage1_{hparams.arch}.pth"
+hparams = dict_to_args(params["train_resnet_128"])
 logger = MLFlowLogger("logs/")
+
+name = " ".join(re.findall("[a-zA-Z]+", hparams.arch))
+
+oof_preds_fpath = data_path / f"l1_{name}_{hparams.sz}_oof_preds.csv"
+metric_fpath = metrics_path / f"l1_{name}_{hparams.sz}_cv.metric"
+submission_fpath = submissions_path / f"l1_{name}_{hparams.sz}_submission.csv"
 
 
 def main(create_submission: bool = True):
@@ -38,16 +43,16 @@ def main(create_submission: bool = True):
     oof_preds = list()
     ckpt_fpaths = list()
     for fold_number in range(n_folds):
-        path = data_path / f"oof_preds_{fold_number}.csv"
+        path = (
+            data_path / f"oof_preds_{name}_{hparams.sz}_fold{fold_number}.csv"
+        )
         ckpt_fpath = train(fold_number=fold_number, folds=folds, path=path)
         ckpt_fpaths.append(ckpt_fpath)
         oof_preds.append(pd.read_csv(path))
 
     # save oof preds for stacking
     sorted_oof_preds = sort_oof_predictions(oof_preds, folds)
-    sorted_oof_preds.to_csv(
-        data_path / "l1_resnet_oof_predictions.csv", index=False
-    )
+    sorted_oof_preds.to_csv(oof_preds_fpath, index=False)
 
     # oof cv score
     cv_score = roc_auc_score(
@@ -55,25 +60,26 @@ def main(create_submission: bool = True):
     )
     logger.log_metrics({"oof_cv_auc": cv_score})
     print(f"OOF CV AUC:{cv_score:.4f}")
-    with open(metrics_path / "l1_resnet_cv.metric", "w") as f:
+    with open(metric_fpath, "w") as f:
         f.write(f"OOF CV AUC: {cv_score:.4f}")
 
     # predict on test data
     preds = list()
     for fold_number in range(n_folds):
         ckpt_fpath = ckpt_fpaths[fold_number]
-        path = submissions_path / f"subs_{fold_number}.csv"
+        path = (
+            submissions_path
+            / f"subs_{name}_{hparams.sz}_fold{fold_number}.csv"
+        )
         model_preds = inference(ckpt_fpath=ckpt_fpath, path=path)
         preds.append(model_preds)
     preds_df = pd.concat([p["preds"] for p in preds], axis=1).reset_index(
         drop=True
     )
 
-    # average predictions for 5 different L1 models
+    # average predictions from 5 different L1 models
     predictions = preds_df.mean(axis=1)
-    prepare_submission(
-        y_preds=predictions, fname="l1_resnet_submission.csv",
-    )
+    predictions.to_csv(submission_fpath, index=False)
 
 
 def sort_oof_predictions(oof_preds, folds):
