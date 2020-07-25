@@ -62,7 +62,6 @@ class MyModel(LightningModule):
     def train_dataloader(self):
         augmentations = Compose(
             [
-                Resize(height=self.hparams.sz, width=self.hparams.sz),
                 RandomResizedCrop(
                     height=self.hparams.sz,
                     width=self.hparams.sz,
@@ -149,7 +148,6 @@ class MyModel(LightningModule):
     def val_dataloader(self):
         augmentations = Compose(
             [
-                Resize(height=self.hparams.sz, width=self.hparams.sz),
                 Normalize(
                     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
                 ),
@@ -173,7 +171,6 @@ class MyModel(LightningModule):
     def test_dataloader(self):
         augmentations = Compose(
             [
-                Resize(height=self.hparams.sz, width=self.hparams.sz),
                 Normalize(
                     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
                 ),
