@@ -20,3 +20,6 @@ __pycache__
 /logs
 /mlruns
 /1
+
+# model checkpoints
+*.ckpt
