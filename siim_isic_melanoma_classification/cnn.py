@@ -23,6 +23,7 @@ from PIL import Image
 from pytorch_lightning.core.lightning import LightningModule
 from pytorch_lightning.metrics.functional import auroc
 from torch.utils.data import DataLoader, Dataset
+from efficientnet_pytorch import EfficientNet
 
 from siim_isic_melanoma_classification.over9000 import Over9000
 from siim_isic_melanoma_classification.lr_scheduler import (
@@ -73,15 +74,27 @@ class MyModel(LightningModule):
         self.valid_images_path = valid_images_path
         self.test_images_path = test_images_path
 
-        self.model = models.__dict__[self.hparams.arch](pretrained=True)
-        c_feature = self.model.fc.in_features
+        if "resnet" in self.hparams.arch:
+            self.model = models.__dict__[self.hparams.arch](pretrained=True)
+            c_feature = self.model.fc.in_features
+            remove_range = 2  # TODO: try only removing last layer
+        if "resnext" in self.hparams.arch:
+            self.model = torch.hub.load(
+                "facebookresearch/semi-supervised-ImageNet1K-models",
+                self.hparams.arch,
+            )
+            c_feature = self.model.fc.in_features
+            remove_range = 2  # TODO: ditto
+        if "efficient" in self.hparams.arch:
+            self.model = EfficientNet.from_pretrained(
+                self.hparams.arch, advprop=True
+            )
         c_out = 1
-        # self.model.fc = nn.Linear(
-        #     in_features=self.model.fc.in_features, out_features=1, bias=True,
+        # self.model = nn.Sequential(
+        #     *list(self.model.children())[:-remove_range]
         # )
-        self.model = nn.Sequential(*list(self.model.children())[:-1])
         self.head = nn.Sequential(
-            AdaptiveConcatPool2d(), Flatten(), nn.Linear(c_feature * 2, c_out)
+            nn.ReLU(), nn.Dropout(), nn.Linear(1000, c_out)
         )
 
     def train_dataloader(self):
