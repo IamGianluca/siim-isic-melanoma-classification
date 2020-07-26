@@ -30,6 +30,23 @@ from siim_isic_melanoma_classification.lr_scheduler import (
 )
 
 
+class AdaptiveConcatPool2d(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.avg = nn.AdaptiveAvgPool2d(output_size=(1, 1))
+        self.max = nn.AdaptiveMaxPool2d(output_size=(1, 1))
+
+    def forward(self, x):
+        avg_x = self.avg(x)
+        max_x = self.max(x)
+        return torch.cat([avg_x, max_x], dim=1)
+
+
+class Flatten(nn.Module):
+    def forward(self, x):
+        return x.view(x.shape[0], -1)
+
+
 class MyModel(LightningModule):
     def __init__(
         self,
@@ -57,8 +74,14 @@ class MyModel(LightningModule):
         self.test_images_path = test_images_path
 
         self.model = models.__dict__[self.hparams.arch](pretrained=True)
-        self.model.fc = nn.Linear(
-            in_features=self.model.fc.in_features, out_features=1, bias=True,
+        c_feature = self.model.fc.in_features
+        c_out = 1
+        # self.model.fc = nn.Linear(
+        #     in_features=self.model.fc.in_features, out_features=1, bias=True,
+        # )
+        self.model = nn.Sequential(*list(self.model.children())[:-1])
+        self.head = nn.Sequential(
+            AdaptiveConcatPool2d(), Flatten(), nn.Linear(c_feature * 2, c_out)
         )
 
     def train_dataloader(self):
@@ -103,6 +126,7 @@ class MyModel(LightningModule):
 
     def forward(self, x):
         x = self.model(x)
+        x = self.head(x).squeeze(1)
         return x
 
     def training_step(self, batch, batch_idx):
