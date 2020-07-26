@@ -15,7 +15,6 @@ from albumentations.augmentations.transforms import (
     Normalize,
     RandomBrightnessContrast,
     RandomResizedCrop,
-    Resize,
     ShiftScaleRotate,
 )
 from albumentations.core.composition import Compose
@@ -24,6 +23,11 @@ from PIL import Image
 from pytorch_lightning.core.lightning import LightningModule
 from pytorch_lightning.metrics.functional import auroc
 from torch.utils.data import DataLoader, Dataset
+
+from siim_isic_melanoma_classification.over9000 import Over9000
+from siim_isic_melanoma_classification.lr_scheduler import (
+    DelayedCosineAnnealingLR,
+)
 
 
 class MyModel(LightningModule):
@@ -125,17 +129,16 @@ class MyModel(LightningModule):
         }
 
     def configure_optimizers(self):
-        optimizer = torch.optim.AdamW(
+        optimizer = Over9000(
             self.parameters(),
             lr=self.hparams.lr,
             weight_decay=self.hparams.wd,
         )
-        scheduler = torch.optim.lr_scheduler.OneCycleLR(
+        cosine_annealing_epochs = int(self.hparams.epochs * 0.20)
+        scheduler = DelayedCosineAnnealingLR(
             optimizer,
-            max_lr=self.hparams.lr * 10,
-            div_factor=10,
-            epochs=self.hparams.epochs,
-            steps_per_epoch=len(self.train_dataloader()),
+            delay_epochs=self.hparams.epochs - cosine_annealing_epochs,
+            cosine_annealing_epochs=cosine_annealing_epochs,
         )
         return [optimizer], [scheduler]
 

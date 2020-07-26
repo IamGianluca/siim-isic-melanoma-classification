@@ -23,6 +23,7 @@ from siim_isic_melanoma_classification.constants import (
     test_img_128_path,
     train_img_128_path,
 )
+from siim_isic_melanoma_classification.submit import prepare_submission
 from siim_isic_melanoma_classification.utils import dict_to_args
 
 params = load_hparams_from_yaml(params_fpath)
@@ -79,7 +80,7 @@ def main(create_submission: bool = True):
 
     # average predictions from 5 different L1 models
     predictions = preds_df.mean(axis=1)
-    predictions.to_csv(submission_fpath, index=False)
+    prepare_submission(y_pred=predictions, fpath=submission_fpath)
 
 
 def sort_oof_predictions(oof_preds, folds):
