@@ -20,6 +20,7 @@ jupyterlab = "^2.1.5"
 mlflow = "^1.9.1"
 "flufl.lock" = "<=3.2"
 torch = {url = "https://download.pytorch.org/whl/nightly/cu102/torch-1.7.0.dev20200720-cp37-cp37m-linux_x86_64.whl"}
+ipywidgets = "^7.5.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
