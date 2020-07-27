@@ -3,3 +3,8 @@
 /l1_resnet_predictions.csv
 /l1_resnet_submission.csv
 /l1_resnet_128_submission.csv
+/subs_resnet_128_fold0.csv
+/subs_resnet_128_fold1.csv
+/subs_resnet_128_fold2.csv
+/subs_resnet_128_fold3.csv
+/subs_resnet_128_fold4.csv

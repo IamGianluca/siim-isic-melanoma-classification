@@ -30,8 +30,7 @@ params = load_hparams_from_yaml(params_fpath)
 hparams = dict_to_args(params["train_resnet_128"])
 logger = MLFlowLogger("logs/")
 
-name = " ".join(re.findall("[a-zA-Z]+", hparams.arch))
-
+name = "resnet"
 oof_preds_fpath = data_path / f"l1_{name}_{hparams.sz}_oof_preds.csv"
 metric_fpath = metrics_path / f"l1_{name}_{hparams.sz}_cv.metric"
 submission_fpath = submissions_path / f"l1_{name}_{hparams.sz}_submission.csv"
@@ -171,6 +170,7 @@ def inference(
         results.append(model(batch).cpu().numpy().reshape(-1))
     preds = np.concatenate(results, axis=0)
     preds_df = pd.DataFrame({"image_name": test_df.image_name, "preds": preds})
+    preds_df.to_csv(path, index=False)
     return preds_df
 
 
