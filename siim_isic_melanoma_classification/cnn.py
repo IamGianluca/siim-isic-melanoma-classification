@@ -19,16 +19,16 @@ from albumentations.augmentations.transforms import (
 )
 from albumentations.core.composition import Compose
 from albumentations.pytorch import ToTensorV2
+from efficientnet_pytorch import EfficientNet
 from PIL import Image
 from pytorch_lightning.core.lightning import LightningModule
 from pytorch_lightning.metrics.functional import auroc
 from torch.utils.data import DataLoader, Dataset
-from efficientnet_pytorch import EfficientNet
 
-from siim_isic_melanoma_classification.over9000 import Over9000
 from siim_isic_melanoma_classification.lr_scheduler import (
     DelayedCosineAnnealingLR,
 )
+from siim_isic_melanoma_classification.over9000 import Over9000
 
 
 class AdaptiveConcatPool2d(nn.Module):

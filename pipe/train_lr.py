@@ -1,5 +1,6 @@
 import joblib
 import numpy as np
+from pytorch_lightning.core.saving import load_hparams_from_yaml
 from sklearn.compose import make_column_transformer
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
@@ -10,9 +11,14 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from siim_isic_melanoma_classification.constants import (
     metrics_path,
     models_path,
+    params_fpath,
 )
 from siim_isic_melanoma_classification.prepare import prepare_dataset
 from siim_isic_melanoma_classification.submit import prepare_submission
+from siim_isic_melanoma_classification.utils import dict_to_args
+
+params = load_hparams_from_yaml(params_fpath)
+hparams = dict_to_args(params["train_lr"])
 
 
 def main():
@@ -47,7 +53,7 @@ def main():
         remainder="drop",
     )
     clf = LogisticRegression(
-        C=1, solver="lbfgs", multi_class="multinomial", max_iter=60
+        C=hparams.c, solver="lbfgs", multi_class="multinomial", max_iter=60
     )
     pipe = make_pipeline(tfms, clf)
 

@@ -1,7 +1,10 @@
 split:
         folds: 5
 
-train_resnet_128:
+train_lr:
+        c: 1
+
+train_efficientnet_128:
         epochs: 10
         arch: "efficientnet-b4"
         precision: 16

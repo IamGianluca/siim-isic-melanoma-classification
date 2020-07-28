@@ -1,5 +1,4 @@
-from torch.optim.lr_scheduler import _LRScheduler, CosineAnnealingLR
-
+from torch.optim.lr_scheduler import CosineAnnealingLR, _LRScheduler
 
 # https://github.com/pabloppp/pytorch-tools/blob/master/torchtools/lr_scheduler/delayed.py
 

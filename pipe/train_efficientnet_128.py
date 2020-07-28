@@ -1,5 +1,3 @@
-import re
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -27,10 +25,10 @@ from siim_isic_melanoma_classification.submit import prepare_submission
 from siim_isic_melanoma_classification.utils import dict_to_args
 
 params = load_hparams_from_yaml(params_fpath)
-hparams = dict_to_args(params["train_resnet_128"])
+hparams = dict_to_args(params["train_efficientnet_128"])
 logger = MLFlowLogger("logs/")
 
-name = "resnet"
+name = "efficientnet"
 oof_preds_fpath = data_path / f"l1_{name}_{hparams.sz}_oof_preds.csv"
 metric_fpath = metrics_path / f"l1_{name}_{hparams.sz}_cv.metric"
 submission_fpath = submissions_path / f"l1_{name}_{hparams.sz}_submission.csv"
@@ -131,6 +129,7 @@ def train(folds: pd.DataFrame, fold_number: int, path):
         progress_bar_refresh_rate=0,
         # auto_lr_find=True,
         # overfit_batches=5,
+        num_sanity_val_steps=5,
         amp_level="O2" if hparams.precision == 32 else "O1",
         precision=hparams.precision,
         logger=logger,

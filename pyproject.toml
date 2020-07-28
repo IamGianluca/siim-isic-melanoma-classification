@@ -25,7 +25,7 @@ ipywidgets = "^7.5.1"
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
 kaggle = "^1.5.6"
-dvc = "^0.94.0"
+dvc = "^1.00.0"
 black = "^19.10b0"
 mypy = "^0.770"
 flake8 = "^3.8.2"
