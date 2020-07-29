@@ -1,0 +1,106 @@
+stages:
+  resize_images:
+    cmd: python pipe/resize_images.py
+    deps:
+    - pipe/resize_images.py
+    - data/train
+    - data/test
+    - data/train.csv
+    - data/test.csv
+    outs:
+    - data/train_128
+    - data/test_128
+    - data/train_192
+    - data/test_192
+    - data/train_256
+    - data/test_256
+    - data/train_384
+    - data/test_384
+    - data/train_512
+    - data/test_512
+    - data/train_768
+    - data/test_768
+    - data/train_1024
+    - data/test_1024
+  dupes:
+    cmd: wget -O data/dupes.csv https://storage.googleapis.com/kaggle-forum-message-attachments/903372/16145/2020_Challenge_duplicates.csv
+    outs:
+    - data/dupes.csv
+  download_train_extra_128:
+    cmd: kaggle datasets download -d cdeotte/malignant-v2-128x128
+    outs:
+    - malignant-v2-128x128.zip
+  unzip_train_extra_128:
+    cmd: unzip malignant-v2-128x128.zip -d data/train_extra_128
+    outs:
+    - data/train_extra_128
+  download_train_extra_192:
+    cmd: kaggle datasets download -d cdeotte/malignant-v2-192x192
+    outs:
+    - malignant-v2-192x192.zip
+  download_train_extra_256:
+    cmd: kaggle datasets download -d cdeotte/malignant-v2-256x256
+    outs:
+    - malignant-v2-256x256.zip
+  download_train_extra_384:
+    cmd: kaggle datasets download -d cdeotte/malignant-v2-384x384
+    outs:
+    - malignant-v2-384x384.zip
+  download_train_extra_512:
+    cmd: kaggle datasets download -d cdeotte/malignant-v2-512x512
+    outs:
+    - malignant-v2-512x512.zip
+  unzip_train_extra_192:
+    cmd: unzip malignant-v2-192x192.zip -d data/train_extra_192
+    outs:
+    - data/train_extra_192
+  unzip_train_extra_256:
+    cmd: unzip malignant-v2-256x256.zip -d data/train_extra_256
+    outs:
+    - data/train_extra_256
+  unzip_train_extra_384:
+    cmd: unzip malignant-v2-384x384.zip -d data/train_extra_384
+    outs:
+    - data/train_extra_384
+  unzip_train_extra_512:
+    cmd: unzip malignant-v2-512x512.zip -d data/train_extra_512
+    outs:
+    - data/train_extra_512
+  split:
+    cmd: python pipe/split.py
+    deps:
+    - pipe/split.py
+    - data/train.csv
+    outs:
+    - data/folds.csv
+  train_lr:
+    cmd: python pipe/train_lr.py
+    deps:
+    - pipe/train_lr.py
+    - data/x_train_32.npy
+    - data/train.csv
+    outs:
+    - metrics/cv.metric
+    - models/stage1_lr.joblib
+  train_efficientnet_128:
+    cmd: python pipe/train_efficientnet_128.py
+    deps:
+    - data/folds.csv
+    - data/test.csv
+    - data/test_128
+    - data/train_128
+    - pipe/train_efficientnet_128.py
+    params:
+    - train_efficientnet_128
+    outs:
+    - data/l1_efficientnet_128_oof_preds.csv
+    - subs/l1_efficientnet_128_submission.csv
+    - subs/subs_efficientnet_128_fold0.csv
+    - subs/subs_efficientnet_128_fold1.csv
+    - subs/subs_efficientnet_128_fold2.csv
+    - subs/subs_efficientnet_128_fold3.csv
+    - subs/subs_efficientnet_128_fold4.csv
+    metrics:
+    - metrics/l1_efficientnet_128_cv.metric:
+        cache: false
+

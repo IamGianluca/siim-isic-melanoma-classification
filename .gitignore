@@ -23,3 +23,8 @@ __pycache__
 
 # model checkpoints
 *.ckpt
+/malignant-v2-128x128.zip
+/malignant-v2-192x192.zip
+/malignant-v2-256x256.zip
+/malignant-v2-384x384.zip
+/malignant-v2-512x512.zip

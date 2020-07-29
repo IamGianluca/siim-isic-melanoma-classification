@@ -1,7 +1,7 @@
-md5: 80f83d431502d2a00bba9e44747f8b1d
+md5: 8e196d19c3c32771a8a0d1e4ace5dbf6
 cmd: python pipe/resize.py
 deps:
-- md5: 985c460d20121cc064032f02d85dc912
+- md5: ece617de4f5f5434c58c1393b855a00c
   path: pipe/resize.py
 - md5: 5d1a75a42c39a65cf84664d5d0e0f0b4.dir
   path: data/test
@@ -14,11 +14,5 @@ deps:
 outs:
 - md5: 73757c03eedb9cec603984370d2c368a
   path: data/x_train_32.npy
-  cache: true
-  metric: false
-  persist: false
 - md5: cde5914bb820799f2108dc79aa335742
   path: data/x_test_32.npy
-  cache: true
-  metric: false
-  persist: false
