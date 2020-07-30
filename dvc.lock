@@ -50,11 +50,6 @@ download_train_extra_128:
   outs:
   - path: malignant-v2-128x128.zip
     md5: bb4f4cb68a16ba92f6ac21a23d89da90
-unzip_train_extra_128:
-  cmd: unzip malignant-v2-128x128.zip -d data/train_extra_128
-  outs:
-  - path: data/train_extra_128
-    md5: a249c82a69a566c17d5b3c60afbdcf9c.dir
 download_train_extra_192:
   cmd: kaggle datasets download -d cdeotte/malignant-v2-192x192
   outs:
@@ -75,26 +70,6 @@ download_train_extra_512:
   outs:
   - path: malignant-v2-512x512.zip
     md5: 83d28d848567826a457eec08f915e65b
-unzip_train_extra_192:
-  cmd: unzip malignant-v2-192x192.zip -d data/train_extra_192
-  outs:
-  - path: data/train_extra_192
-    md5: 9163121f4100775e90176b4648cf5c56.dir
-unzip_train_extra_256:
-  cmd: unzip malignant-v2-256x256.zip -d data/train_extra_256
-  outs:
-  - path: data/train_extra_256
-    md5: bd52efdbb6ad669544541ec16707aba4.dir
-unzip_train_extra_384:
-  cmd: unzip malignant-v2-384x384.zip -d data/train_extra_384
-  outs:
-  - path: data/train_extra_384
-    md5: db19eab5355249ec8741a0df48ec2c55.dir
-unzip_train_extra_512:
-  cmd: unzip malignant-v2-512x512.zip -d data/train_extra_512
-  outs:
-  - path: data/train_extra_512
-    md5: ea9201e9cc90adcf1ff5f3a944ae0aca.dir
 split:
   cmd: python pipe/split.py
   deps:
@@ -160,3 +135,118 @@ train_efficientnet_128:
     md5: ebef104849e095f7a33bdcea80d87833
   - path: subs/subs_efficientnet_128_fold4.csv
     md5: 29c07750083c24caa79f947e0d16c0ea
+train_resnet_128:
+  cmd: python pipe/train_resnet_128.py
+  deps:
+  - path: data/folds_with_extra.csv
+    md5: e41059d293157cbeb014fd991083f1f4
+  - path: data/test.csv
+    md5: 90a1a5b724eb0cf2666fbd850d6f55b1
+  - path: data/test_128
+    md5: 5364e325677bd83100a46caa1bf54bc5.dir
+  - path: data/train_with_extra_128
+    md5: 15cdc0e17ae05d1c1a810f551c207ed2.dir
+  - path: pipe/train_resnet_128.py
+    md5: a280c8f7e76da32223448b9cda0d905c
+  params:
+    params.yaml:
+      train_resnet_128:
+        epochs: 10
+        arch: resnet34
+        precision: 16
+        sz: 128
+        bs: 512
+        lr: 0.001
+        wd: 0.01
+        mom: 0.9
+  outs:
+  - path: metrics/l1_resnet_128_cv.metric
+    md5: 27164490b0a9204284af89ffa52967d6
+  - path: subs/l1_resnet_128_submission.csv
+    md5: 2759eb63b6febbf07f9db3cbbebfe675
+  - path: subs/subs_resnet_128_fold0.csv
+    md5: ec91e69341123fce86f9f014562569ef
+  - path: subs/subs_resnet_128_fold1.csv
+    md5: 4f927939c1c339deab04d149d89d1b4d
+  - path: subs/subs_resnet_128_fold2.csv
+    md5: 4a615e61a47e918a416da11a733f4ff7
+  - path: subs/subs_resnet_128_fold3.csv
+    md5: 2023eaf7a621c6fca854aad14a609431
+  - path: subs/subs_resnet_128_fold4.csv
+    md5: 2f5a0f52235ba90dd50f82430217bb33
+unzip_extra_malig_data:
+  cmd: python pipe/add_extra_malig.py
+  deps:
+  - path: pipe/add_extra_malig.py
+    md5: 3abb6c6edfb47870c28152690a8d124f
+  outs:
+  - path: data/train_malig_1.csv
+    md5: c8a7c03244fe75129ff7a603b5537ee6
+  - path: data/train_malig_2.csv
+    md5: d57b6ac5b82f6715da35cca79dad5145
+  - path: data/train_malig_3.csv
+    md5: 5736b06c158b6fdbbb57664a37e1868f
+  - path: data/train_with_extra_128
+    md5: 15cdc0e17ae05d1c1a810f551c207ed2.dir
+  - path: data/train_with_extra_192
+    md5: 19748128fa7e2a518e7b1e5d0edee43e.dir
+  - path: data/train_with_extra_256
+    md5: 2cdd4693c24ca870f6a1b25bf6aa3c60.dir
+  - path: data/train_with_extra_384
+    md5: e72675d7490d03e5deb30d3e3f7fe1ac.dir
+  - path: data/train_with_extra_512
+    md5: b490cd755354d577da430f44f9e20918.dir
+split_with_extra:
+  cmd: python pipe/split_with_extra.py
+  deps:
+  - path: data/train.csv
+    md5: 86657c7009b003543b377b62a8745b4c
+  - path: data/train_malig_1.csv
+    md5: c8a7c03244fe75129ff7a603b5537ee6
+  - path: data/train_malig_2.csv
+    md5: d57b6ac5b82f6715da35cca79dad5145
+  - path: data/train_malig_3.csv
+    md5: 5736b06c158b6fdbbb57664a37e1868f
+  - path: pipe/split_with_extra.py
+    md5: ea678253fd61288737db4d540a940d94
+  outs:
+  - path: data/folds_with_extra.csv
+    md5: e41059d293157cbeb014fd991083f1f4
+download_train_2019_128:
+  cmd: kaggle datasets download -d cdeotte/jpeg-isic2019-128x128
+  outs:
+  - path: jpeg-isic2019-128x128.zip
+    md5: 80ab82c9dc92968100e1dcc0b0379c65
+download_train_2019_192:
+  cmd: kaggle datasets download -d cdeotte/jpeg-isic2019-192x192
+  outs:
+  - path: jpeg-isic2019-192x192.zip
+    md5: 4a3ca6be2e07ddbbb3807ccbdaadce32
+download_train_2019_384:
+  cmd: kaggle datasets download -d cdeotte/jpeg-isic2019-384x384
+  outs:
+  - path: jpeg-isic2019-384x384.zip
+    md5: 29341d9020e86c63de6ee749257fa744
+download_train_2019_256:
+  cmd: kaggle datasets download -d cdeotte/jpeg-isic2019-256x256
+  outs:
+  - path: jpeg-isic2019-256x256.zip
+    md5: 82cb01de93e3d15737f627bfeae34de8
+download_train_2019_512:
+  cmd: kaggle datasets download -d cdeotte/jpeg-isic2019-512x512
+  outs:
+  - path: jpeg-isic2019-512x512.zip
+    md5: c9628a89b50b5b9965bec6cb656f562c
+download_hair:
+  cmd: kaggle datasets download -d nroman/melanoma-hairs
+  outs:
+  - path: melanoma-hairs.zip
+    md5: 172bbcd5f757e9778438bcd1d0a6f6db
+unzip_hairs:
+  cmd: unzip melanoma-hairs.zip -d data/hairs/
+  deps:
+  - path: melanoma-hairs.zip
+    md5: 172bbcd5f757e9778438bcd1d0a6f6db
+  outs:
+  - path: data/hairs/
+    md5: 2ac962347692c92174c953347ca50939.dir
