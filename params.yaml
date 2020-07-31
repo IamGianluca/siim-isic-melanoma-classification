@@ -10,7 +10,7 @@ train_resnet_128:
         precision: 16
         sz: 128
         bs: 512
-        lr: 0.001
+        lr: "find"
         wd: 0.01
         mom: 0.9
 
