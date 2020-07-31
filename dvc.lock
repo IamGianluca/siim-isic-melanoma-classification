@@ -250,3 +250,44 @@ unzip_hairs:
   outs:
   - path: data/hairs/
     md5: 2ac962347692c92174c953347ca50939.dir
+train_resnet_256:
+  cmd: python pipe/train_resnet_256.py
+  deps:
+  - path: data/folds_with_extra.csv
+    md5: e41059d293157cbeb014fd991083f1f4
+  - path: data/hairs
+    md5: 2ac962347692c92174c953347ca50939.dir
+  - path: data/test.csv
+    md5: 90a1a5b724eb0cf2666fbd850d6f55b1
+  - path: data/test_256
+    md5: 112e0a5ed8c9d17787032dbaab97a758.dir
+  - path: data/train_with_extra_256
+    md5: 2cdd4693c24ca870f6a1b25bf6aa3c60.dir
+  - path: pipe/train_resnet_256.py
+    md5: ec5cad414f29fbb3607f5f27b4ddfc6d
+  params:
+    params.yaml:
+      train_resnet_256:
+        epochs: 10
+        arch: resnet34
+        precision: 16
+        sz: 256
+        bs: 256
+        lr: 0.001
+        wd: 0.01
+        mom: 0.9
+  outs:
+  - path: metrics/l1_resnet_256_cv.metric
+    md5: 86fd48a34e9ca33a40f806e01499da76
+  - path: subs/l1_resnet_256_submission.csv
+    md5: 50a91d6a3f504b182eaa1a2b9a820392
+  - path: subs/subs_resnet_256_fold0.csv
+    md5: 51f1cae94c7b9caaa7dfff95bd58607a
+  - path: subs/subs_resnet_256_fold1.csv
+    md5: 4317647ff2f0833839ac1ddd29b707f3
+  - path: subs/subs_resnet_256_fold2.csv
+    md5: 1405a3561d2d30fac3cd3e8df8eb1d03
+  - path: subs/subs_resnet_256_fold3.csv
+    md5: aba1c745897be689f11dfeeeec6b6759
+  - path: subs/subs_resnet_256_fold4.csv
+    md5: 376132713714dd4642b61e971412dd87
