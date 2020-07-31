@@ -157,3 +157,24 @@ stages:
     - melanoma-hairs.zip
     outs:
     - data/hairs/
+  train_resnet_256:
+    cmd: python pipe/train_resnet_256.py
+    deps:
+    - data/folds_with_extra.csv
+    - data/hairs
+    - data/test.csv
+    - data/test_256
+    - data/train_with_extra_256
+    - pipe/train_resnet_256.py
+    params:
+    - train_resnet_256
+    outs:
+    - subs/l1_resnet_256_submission.csv
+    - subs/subs_resnet_256_fold0.csv
+    - subs/subs_resnet_256_fold1.csv
+    - subs/subs_resnet_256_fold2.csv
+    - subs/subs_resnet_256_fold3.csv
+    - subs/subs_resnet_256_fold4.csv
+    metrics:
+    - metrics/l1_resnet_256_cv.metric:
+        cache: false

@@ -39,9 +39,9 @@ from siim_isic_melanoma_classification.constants import (
     params_fpath,
     submissions_path,
     test_fpath,
-    test_img_128_path,
-    train_img_128_extra_path,
-    train_img_128_path,
+    test_img_256_path,
+    train_img_256_extra_path,
+    train_img_256_path,
 )
 from siim_isic_melanoma_classification.lr_scheduler import (
     DelayedCosineAnnealingLR,
@@ -51,7 +51,7 @@ from siim_isic_melanoma_classification.submit import prepare_submission
 from siim_isic_melanoma_classification.utils import dict_to_args
 
 params = load_hparams_from_yaml(params_fpath)
-hparams = dict_to_args(params["train_resnet_128"])
+hparams = dict_to_args(params["train_resnet_256"])
 logger = MLFlowLogger("logs/")
 
 name = "resnet"
@@ -144,9 +144,9 @@ def train(folds: pd.DataFrame, fold_number: int, path):
         train_df=train_df,
         valid_df=test_df,
         test_df=test_df,
-        train_images_path=train_img_128_extra_path,
-        valid_images_path=train_img_128_path,
-        test_images_path=train_img_128_path,  # NOTE: OOF predictions
+        train_images_path=train_img_256_extra_path,
+        valid_images_path=train_img_256_path,
+        test_images_path=train_img_256_path,  # NOTE: OOF predictions
         path=path,
     )
     callback = ModelCheckpoint(
@@ -195,7 +195,7 @@ def inference(
 
     # make dataloader load full test data
     model.test_df = test_df
-    model.test_images_path = test_img_128_path
+    model.test_images_path = test_img_256_path
 
     results = list()
     for batch in model.test_dataloader():
