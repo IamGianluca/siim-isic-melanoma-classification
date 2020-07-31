@@ -22,7 +22,9 @@ from torch import nn
 from torch.utils.data import DataLoader
 from torchvision import models
 
-from siim_isic_melanoma_classification.augmentation import Microscope
+from siim_isic_melanoma_classification.augmentation import (
+    AdvancedHairAugmentation,
+)
 from siim_isic_melanoma_classification.cnn import (
     Flatten,
     FocalLoss,
@@ -38,8 +40,8 @@ from siim_isic_melanoma_classification.constants import (
     submissions_path,
     test_fpath,
     test_img_128_path,
-    train_img_128_path,
     train_img_128_extra_path,
+    train_img_128_path,
 )
 from siim_isic_melanoma_classification.lr_scheduler import (
     DelayedCosineAnnealingLR,
@@ -267,7 +269,7 @@ class MyModel(LightningModule):
                     width=self.hparams.sz,
                     scale=(0.7, 1.0),
                 ),
-                #         ToGray(),
+                # AdvancedHairAugmentation(),
                 A.GridDistortion(),
                 A.RandomBrightnessContrast(),
                 A.ShiftScaleRotate(),
@@ -276,7 +278,7 @@ class MyModel(LightningModule):
                     max_height=int(self.hparams.sz / 10),
                     max_width=int(self.hparams.sz / 10),
                 ),
-                # Microscope(p=0.5),
+                # A.HueSaturationValue(),
                 A.Normalize(
                     mean=[0.485, 0.456, 0.406],
                     std=[0.229, 0.224, 0.225],
@@ -342,10 +344,11 @@ class MyModel(LightningModule):
         )
         return [optimizer], [scheduler]
 
-    def loss_function(self, y_pred, y_true):
+    def loss_function(self, y_pred, y_true, label_smoothing=0.02):
+        y_smo = y_true.float() * (1 - label_smoothing) + 0.5 * label_smoothing
+
         loss_fn = FocalLoss()
-        y_true = y_true.float()
-        loss = loss_fn(y_pred, y_true)
+        loss = loss_fn(y_pred, y_smo.type_as(y_pred))
         return loss
 
     def val_dataloader(self):

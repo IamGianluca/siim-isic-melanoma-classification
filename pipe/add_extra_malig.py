@@ -1,10 +1,11 @@
+import os
+import shutil
 from shutil import copytree
 from zipfile import ZipFile
 
-from siim_isic_melanoma_classification.constants import data_path
 from tensorboard.compat import tf
-import shutil
-import os
+
+from siim_isic_melanoma_classification.constants import data_path
 
 szs = ["128", "192", "256", "384", "512"]
 
