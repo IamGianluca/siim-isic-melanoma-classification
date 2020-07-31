@@ -4,6 +4,16 @@ split:
 train_lr:
         c: 1
 
+train_resnet_128:
+        epochs: 10
+        arch: "resnet34"
+        precision: 16
+        sz: 128
+        bs: 512
+        lr: 0.001
+        wd: 0.01
+        mom: 0.9
+
 train_efficientnet_128:
         epochs: 10
         arch: "efficientnet-b4"

@@ -30,10 +30,6 @@ stages:
     cmd: kaggle datasets download -d cdeotte/malignant-v2-128x128
     outs:
     - malignant-v2-128x128.zip
-  unzip_train_extra_128:
-    cmd: unzip malignant-v2-128x128.zip -d data/train_extra_128
-    outs:
-    - data/train_extra_128
   download_train_extra_192:
     cmd: kaggle datasets download -d cdeotte/malignant-v2-192x192
     outs:
@@ -50,22 +46,6 @@ stages:
     cmd: kaggle datasets download -d cdeotte/malignant-v2-512x512
     outs:
     - malignant-v2-512x512.zip
-  unzip_train_extra_192:
-    cmd: unzip malignant-v2-192x192.zip -d data/train_extra_192
-    outs:
-    - data/train_extra_192
-  unzip_train_extra_256:
-    cmd: unzip malignant-v2-256x256.zip -d data/train_extra_256
-    outs:
-    - data/train_extra_256
-  unzip_train_extra_384:
-    cmd: unzip malignant-v2-384x384.zip -d data/train_extra_384
-    outs:
-    - data/train_extra_384
-  unzip_train_extra_512:
-    cmd: unzip malignant-v2-512x512.zip -d data/train_extra_512
-    outs:
-    - data/train_extra_512
   split:
     cmd: python pipe/split.py
     deps:
@@ -104,3 +84,76 @@ stages:
     - metrics/l1_efficientnet_128_cv.metric:
         cache: false
 
+  train_resnet_128:
+    cmd: python pipe/train_resnet_128.py
+    deps:
+    - data/folds_with_extra.csv
+    - data/test.csv
+    - data/test_128
+    - data/train_with_extra_128
+    - pipe/train_resnet_128.py
+    params:
+    - train_resnet_128
+    outs:
+    - subs/l1_resnet_128_submission.csv
+    - subs/subs_resnet_128_fold0.csv
+    - subs/subs_resnet_128_fold1.csv
+    - subs/subs_resnet_128_fold2.csv
+    - subs/subs_resnet_128_fold3.csv
+    - subs/subs_resnet_128_fold4.csv
+    metrics:
+    - metrics/l1_resnet_128_cv.metric:
+        cache: false
+  unzip_extra_malig_data:
+    cmd: python pipe/add_extra_malig.py
+    deps:
+    - pipe/add_extra_malig.py
+    outs:
+    - data/train_malig_1.csv
+    - data/train_malig_2.csv
+    - data/train_malig_3.csv
+    - data/train_with_extra_128
+    - data/train_with_extra_192
+    - data/train_with_extra_256
+    - data/train_with_extra_384
+    - data/train_with_extra_512
+  split_with_extra:
+    cmd: python pipe/split_with_extra.py
+    deps:
+    - data/train.csv
+    - data/train_malig_1.csv
+    - data/train_malig_2.csv
+    - data/train_malig_3.csv
+    - pipe/split_with_extra.py
+    outs:
+    - data/folds_with_extra.csv
+  download_train_2019_128:
+    cmd: kaggle datasets download -d cdeotte/jpeg-isic2019-128x128
+    outs:
+    - jpeg-isic2019-128x128.zip
+  download_train_2019_192:
+    cmd: kaggle datasets download -d cdeotte/jpeg-isic2019-192x192
+    outs:
+    - jpeg-isic2019-192x192.zip
+  download_train_2019_384:
+    cmd: kaggle datasets download -d cdeotte/jpeg-isic2019-384x384
+    outs:
+    - jpeg-isic2019-384x384.zip
+  download_train_2019_256:
+    cmd: kaggle datasets download -d cdeotte/jpeg-isic2019-256x256
+    outs:
+    - jpeg-isic2019-256x256.zip
+  download_train_2019_512:
+    cmd: kaggle datasets download -d cdeotte/jpeg-isic2019-512x512
+    outs:
+    - jpeg-isic2019-512x512.zip
+  download_hair:
+    cmd: kaggle datasets download -d nroman/melanoma-hairs
+    outs:
+    - melanoma-hairs.zip
+  unzip_hairs:
+    cmd: unzip melanoma-hairs.zip -d data/hairs/
+    deps:
+    - melanoma-hairs.zip
+    outs:
+    - data/hairs/
