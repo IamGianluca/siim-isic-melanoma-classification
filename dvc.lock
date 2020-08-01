@@ -147,7 +147,7 @@ train_resnet_128:
   - path: data/train_with_extra_128
     md5: 15cdc0e17ae05d1c1a810f551c207ed2.dir
   - path: pipe/train_resnet_128.py
-    md5: c2862274670a00e714424611a4fd96a2
+    md5: 9a7f4a179a90eab0a662e7d1192247cc
   params:
     params.yaml:
       train_resnet_128:

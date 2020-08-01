@@ -160,7 +160,6 @@ def train(folds: pd.DataFrame, fold_number: int, path):
     trainer = Trainer(
         gpus=1,
         max_epochs=hparams.epochs,
-        progress_bar_refresh_rate=0,
         # auto_lr_find=True,
         # overfit_batches=5,
         num_sanity_val_steps=5,
@@ -414,9 +413,6 @@ class MyModel(LightningModule):
         val_auc = auroc(y_pred, y_true)
 
         logs = {"val_loss": val_loss, "val_auc": val_auc}
-        print(
-            f"Epoch {self.current_epoch} // val loss: {val_loss:.4f}, val auc: {val_auc:.4f}, pos: {y_true.sum()}, neg: {len(y_true) - y_true.sum()}"
-        )
         return {
             "log": logs,
         }
