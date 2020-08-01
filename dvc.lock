@@ -139,7 +139,7 @@ train_resnet_128:
   cmd: python pipe/train_resnet_128.py
   deps:
   - path: data/folds_with_extra.csv
-    md5: e41059d293157cbeb014fd991083f1f4
+    md5: dd2832bd37791f544e7471f50d0a8ee1
   - path: data/test.csv
     md5: 90a1a5b724eb0cf2666fbd850d6f55b1
   - path: data/test_128
@@ -161,19 +161,19 @@ train_resnet_128:
         mom: 0.9
   outs:
   - path: metrics/l1_resnet_128_cv.metric
-    md5: 269f9d1aa8a70f1b5ea196845ae95353
+    md5: 52f65303a3a0bbea927c82976890b142
   - path: subs/l1_resnet_128_submission.csv
-    md5: b4b153ce2c1f7e5de19a546fc7c048f7
+    md5: 0e577009506bbcaacd0b02f9017b4390
   - path: subs/subs_resnet_128_fold0.csv
-    md5: 59914fcb3d0653e22d27f89b13242f79
+    md5: 6a861379568c9d8e94d90d7dbdeadb5b
   - path: subs/subs_resnet_128_fold1.csv
-    md5: f015ae07a7037f7ed20c340a45247c3e
+    md5: 680a05c0987ce2863596f8a98367b0a2
   - path: subs/subs_resnet_128_fold2.csv
-    md5: 60e13705868b41f563b7e7d9107fef70
+    md5: 6cc895e1db417e8436852eb42b0f3699
   - path: subs/subs_resnet_128_fold3.csv
-    md5: 6c52659658a1af3cf1c0a80829ce2bea
+    md5: 3fe3a011b43568e0bfd7ee66efd32c43
   - path: subs/subs_resnet_128_fold4.csv
-    md5: 42911870ee533128a497d14a694e7c8a
+    md5: 78a9fc11534e6b2f9b324d91e0ca92f2
 unzip_extra_malig_data:
   cmd: python pipe/add_extra_malig.py
   deps:
@@ -208,10 +208,10 @@ split_with_extra:
   - path: data/train_malig_3.csv
     md5: 5736b06c158b6fdbbb57664a37e1868f
   - path: pipe/split_with_extra.py
-    md5: 5e28147bdbe5994c6755e9c7ae2ca9bf
+    md5: c10f8b12b02c5f4b8f00cae48add5f69
   outs:
   - path: data/folds_with_extra.csv
-    md5: e41059d293157cbeb014fd991083f1f4
+    md5: dd2832bd37791f544e7471f50d0a8ee1
 download_train_2019_128:
   cmd: kaggle datasets download -d cdeotte/jpeg-isic2019-128x128
   outs:
