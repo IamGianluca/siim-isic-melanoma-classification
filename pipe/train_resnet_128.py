@@ -169,11 +169,13 @@ def train(folds: pd.DataFrame, fold_number: int, path):
         logger=logger,
         checkpoint_callback=callback,
     )
-    # # Run learning rate finder
-    # lr_finder = trainer.lr_find(model)
-    # new_lr = lr_finder.suggestion()
-    # print(new_lr)
-    # model.hparams.lr = new_lr
+    # find optimal learning rate
+    if hparams.lr == "find":
+        trainer.scaler = torch.cuda.amp.GradScaler()
+        lr_finder = trainer.lr_find(model)
+        optimal_lr = lr_finder.suggestion()
+        print(f"Optimal LR: {optimal_lr}")
+        model.lr = optimal_lr
 
     trainer.fit(model)
 
@@ -223,6 +225,7 @@ class MyModel(LightningModule):
         super().__init__()
         self.path = path
         self.hparams = hparams
+        self.lr = self.hparams.lr
         self.fold = fold
 
         self.train_df = train_df
@@ -331,12 +334,11 @@ class MyModel(LightningModule):
         }
 
     def configure_optimizers(self):
+        print(f"Using LR: {self.lr}")
         optimizer = Over9000(
-            self.parameters(),
-            lr=self.hparams.lr,
-            weight_decay=self.hparams.wd,
+            self.parameters(), lr=self.lr, weight_decay=self.hparams.wd,
         )
-        cosine_annealing_epochs = int(self.hparams.epochs * 0.20)
+        cosine_annealing_epochs = int(self.hparams.epochs * 0.60)
         scheduler = DelayedCosineAnnealingLR(
             optimizer,
             delay_epochs=self.hparams.epochs - cosine_annealing_epochs,

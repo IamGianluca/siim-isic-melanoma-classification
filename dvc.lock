@@ -147,7 +147,7 @@ train_resnet_128:
   - path: data/train_with_extra_128
     md5: 15cdc0e17ae05d1c1a810f551c207ed2.dir
   - path: pipe/train_resnet_128.py
-    md5: 85ee213d5f8015729de80f4b0f93efb6
+    md5: c2862274670a00e714424611a4fd96a2
   params:
     params.yaml:
       train_resnet_128:
@@ -156,24 +156,24 @@ train_resnet_128:
         precision: 16
         sz: 128
         bs: 512
-        lr: 0.001
+        lr: find
         wd: 0.01
         mom: 0.9
   outs:
   - path: metrics/l1_resnet_128_cv.metric
-    md5: 3af15822df0d280cea888d58eeeec467
+    md5: 269f9d1aa8a70f1b5ea196845ae95353
   - path: subs/l1_resnet_128_submission.csv
-    md5: a4fdf4a83a46b59cee19f559c627ef64
+    md5: b4b153ce2c1f7e5de19a546fc7c048f7
   - path: subs/subs_resnet_128_fold0.csv
-    md5: b9c36e43d1eb2620ba3de6674be3d468
+    md5: 59914fcb3d0653e22d27f89b13242f79
   - path: subs/subs_resnet_128_fold1.csv
-    md5: a5e9c0d63fda6aaa0cf76616f68ae061
+    md5: f015ae07a7037f7ed20c340a45247c3e
   - path: subs/subs_resnet_128_fold2.csv
-    md5: 718331901cf4f50f3d39a2cccea835e6
+    md5: 60e13705868b41f563b7e7d9107fef70
   - path: subs/subs_resnet_128_fold3.csv
-    md5: 080f901452ced6cf035a028832bf61c1
+    md5: 6c52659658a1af3cf1c0a80829ce2bea
   - path: subs/subs_resnet_128_fold4.csv
-    md5: 2e01ce18aca2702bde92fcc7eb6920a6
+    md5: 42911870ee533128a497d14a694e7c8a
 unzip_extra_malig_data:
   cmd: python pipe/add_extra_malig.py
   deps:

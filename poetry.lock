@@ -1450,7 +1450,7 @@ six = ">=1.9"
 [[package]]
 category = "main"
 description = "Run a subprocess in a pseudo terminal"
-marker = "sys_platform != \"win32\" or os_name != \"nt\" or python_version >= \"3.3\" and sys_platform != \"win32\" or python_version >= \"3.4\" and sys_platform != \"win32\""
+marker = "python_version >= \"3.3\" and sys_platform != \"win32\" or sys_platform != \"win32\" or python_version >= \"3.4\" and sys_platform != \"win32\" or os_name != \"nt\" or python_version >= \"3.3\" and sys_platform != \"win32\" and (python_version >= \"3.3\" and sys_platform != \"win32\" or sys_platform != \"win32\" or python_version >= \"3.4\" and sys_platform != \"win32\") or python_version >= \"3.4\" and sys_platform != \"win32\" and (python_version >= \"3.3\" and sys_platform != \"win32\" or sys_platform != \"win32\" or python_version >= \"3.4\" and sys_platform != \"win32\")"
 name = "ptyprocess"
 optional = false
 python-versions = "*"
@@ -2079,6 +2079,7 @@ numpy = "*"
 reference = ""
 type = "url"
 url = "https://download.pytorch.org/whl/nightly/cu102/torch-1.7.0.dev20200720-cp37-cp37m-linux_x86_64.whl"
+
 [[package]]
 category = "main"
 description = "image and video datasets and models for torch deep learning"
@@ -2099,6 +2100,7 @@ scipy = ["scipy"]
 reference = ""
 type = "url"
 url = "https://download.pytorch.org/whl/nightly/cu102/torchvision-0.8.0.dev20200720-cp37-cp37m-linux_x86_64.whl"
+
 [[package]]
 category = "main"
 description = "Tornado is a Python web framework and asynchronous networking library, originally developed at FriendFeed."
@@ -2282,7 +2284,7 @@ docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
 testing = ["jaraco.itertools", "func-timeout"]
 
 [metadata]
-content-hash = "8accf90172591ed861c2033feb98168376936cc8f93875a41b609cf92ff37081"
+content-hash = "1388e5a8043a8416a69cc95b03a0903209443b04724ccdcdd3b16ed64bdddde6"
 python-versions = "^3.7"
 
 [metadata.files]
