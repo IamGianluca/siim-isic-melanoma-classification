@@ -20,3 +20,9 @@
 /subs_resnet_256_fold2.csv
 /subs_resnet_256_fold3.csv
 /subs_resnet_256_fold4.csv
+/l1_efficientnet_384_submission.csv
+/subs_efficientnet_384_fold0.csv
+/subs_efficientnet_384_fold1.csv
+/subs_efficientnet_384_fold2.csv
+/subs_efficientnet_384_fold3.csv
+/subs_efficientnet_384_fold4.csv

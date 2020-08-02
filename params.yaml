@@ -14,13 +14,13 @@ train_resnet_128:
         wd: 0.01
         mom: 0.9
 
-train_efficientnet_128:
-        epochs: 10
+train_efficientnet_384:
+        epochs: 15
         arch: "efficientnet-b4"
         precision: 16
-        sz: 128
-        bs: 128
-        lr: 0.003
+        sz: 384
+        bs: 16
+        lr: "find"
         wd: 0.01
         mom: 0.9
 
