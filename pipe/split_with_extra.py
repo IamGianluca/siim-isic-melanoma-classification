@@ -20,11 +20,11 @@ def main():
     # split malignant cases from 2017 and 2018 competition
     # between 5 folds
     condition = [
-        new_malig.tfrecord.isin([30, 32, 34]),
-        new_malig.tfrecord.isin([36, 38, 40]),
-        new_malig.tfrecord.isin([42, 44, 46]),
-        new_malig.tfrecord.isin([48, 50, 52]),
-        new_malig.tfrecord.isin([54, 56, 58]),
+        new_malig.tfrecord.isin([15, 16, 17, 30, 32, 40]),
+        new_malig.tfrecord.isin([18, 19, 20, 34, 44, 46]),
+        new_malig.tfrecord.isin([21, 22, 23, 36, 48, 50]),
+        new_malig.tfrecord.isin([24, 25, 26, 38, 56, 58]),
+        new_malig.tfrecord.isin([27, 28, 29, 42, 52, 54]),
     ]
     choice = [0, 1, 2, 3, 4]
     new_malig["fold"] = np.select(condition, choice, default=-1)
