@@ -101,12 +101,14 @@ train_efficientnet_384:
     md5: dd2832bd37791f544e7471f50d0a8ee1
   - path: data/test.csv
     md5: 90a1a5b724eb0cf2666fbd850d6f55b1
-  - path: data/test_128
-    md5: 5364e325677bd83100a46caa1bf54bc5.dir
+  - path: data/test_384
+    md5: bf00d2deb0e134d787d22959f9e8a7f6.dir
+  - path: data/train_384
+    md5: 5c1bf1e09e9d69afc1d1d678169b1c61.dir
   - path: data/train_with_extra_384
     md5: e72675d7490d03e5deb30d3e3f7fe1ac.dir
   - path: pipe/train_efficientnet_384.py
-    md5: d17e49c07e6bc6ac2fdcb6a89a4bdee8
+    md5: 9809b6d5498d8483328cfb546506243b
   params:
     params.yaml:
       train_efficientnet_384:
@@ -120,21 +122,31 @@ train_efficientnet_384:
         mom: 0.9
   outs:
   - path: data/l1_efficientnet_384_oof_preds.csv
-    md5: 4b0ba34d1796054e1409a6cf335b201c
+    md5: 193db64d238627d341d9f47236a53ec8
   - path: metrics/l1_efficientnet_384_cv.metric
-    md5: 647f76be334279ca08c3405abc9fff47
+    md5: 4a5642653b5f7104dccc27fe8277d3b4
+  - path: models/model_name=efficientnet_sz=384_fold=0.ckpt
+    md5: 8eba401321c879675b0052e491466004
+  - path: models/model_name=efficientnet_sz=384_fold=1.ckpt
+    md5: df54bd16fe1a5ff105105f24eca5328f
+  - path: models/model_name=efficientnet_sz=384_fold=2.ckpt
+    md5: cc8e1ccfd7f9aa2037786a82471d1f06
+  - path: models/model_name=efficientnet_sz=384_fold=3.ckpt
+    md5: 0c1887338b277a9a98571f127df5a5d9
+  - path: models/model_name=efficientnet_sz=384_fold=4.ckpt
+    md5: 5b8bdae6cdcb5ba48853b4a3a5ba44bc
   - path: subs/l1_efficientnet_384_submission.csv
-    md5: 20764ee1abe5640967f6b5bc895200ac
+    md5: 2ddfb3a55d82ddc0b441334ff3fde6a6
   - path: subs/subs_efficientnet_384_fold0.csv
-    md5: c32d3f55c703fb18ecb0e1b40249d1ff
+    md5: 9566945fe7f198806c20ec369570c9b0
   - path: subs/subs_efficientnet_384_fold1.csv
-    md5: 423713726508c15c0998611f7da9252e
+    md5: c47a7fed8a3fc99ca23cceb93b00b5d7
   - path: subs/subs_efficientnet_384_fold2.csv
-    md5: 821c7126531e8a58d29945af3bcee2ae
+    md5: d05755f2aa7857c189b944089aae9b73
   - path: subs/subs_efficientnet_384_fold3.csv
-    md5: e452bfbe3154795ae39870d4e804c287
+    md5: c00554e328e8a1a1040bbfbd5399a3b2
   - path: subs/subs_efficientnet_384_fold4.csv
-    md5: 0a365aac3c608bb015700a93f2cf12f9
+    md5: 08d3829063da9634b41e40d56fe72492
 train_resnet_128:
   cmd: python pipe/train_resnet_128.py
   deps:
@@ -144,14 +156,16 @@ train_resnet_128:
     md5: 90a1a5b724eb0cf2666fbd850d6f55b1
   - path: data/test_128
     md5: 5364e325677bd83100a46caa1bf54bc5.dir
+  - path: data/train_128
+    md5: d04c4c8ef47b1f81a5f8db5ca48cc536.dir
   - path: data/train_with_extra_128
     md5: 15cdc0e17ae05d1c1a810f551c207ed2.dir
   - path: pipe/train_resnet_128.py
-    md5: 9a7f4a179a90eab0a662e7d1192247cc
+    md5: 72a60f1e99b40c955af4676b8823cdda
   params:
     params.yaml:
       train_resnet_128:
-        epochs: 10
+        epochs: 20
         arch: resnet34
         precision: 16
         sz: 128
@@ -160,23 +174,65 @@ train_resnet_128:
         wd: 0.01
         mom: 0.9
   outs:
+  - path: data/l1_resnet_128_oof_preds.csv
+    md5: 03fa4707b03579843f69bdd1180a6e3d
   - path: metrics/l1_resnet_128_cv.metric
-    md5: 52f65303a3a0bbea927c82976890b142
+    md5: bfed817992af38d0a56418036ff05b69
+  - path: models/model_name=resnet_sz=128_fold=0.ckpt
+    md5: d205ae2392c9e65319cf7d7a74c1f7ff
+  - path: models/model_name=resnet_sz=128_fold=1.ckpt
+    md5: caa8dcb6a7b1749a6e9d71620de5d910
+  - path: models/model_name=resnet_sz=128_fold=2.ckpt
+    md5: 3eeb5f9a8e9f5ad47609af504ac76f74
+  - path: models/model_name=resnet_sz=128_fold=3.ckpt
+    md5: 01f22f52d8d3adea7001964fa958e538
+  - path: models/model_name=resnet_sz=128_fold=4.ckpt
+    md5: 9131fe4863560f8a545729184b42adad
   - path: subs/l1_resnet_128_submission.csv
-    md5: 0e577009506bbcaacd0b02f9017b4390
+    md5: 03735c33a9127aa63deb00679d7fa468
   - path: subs/subs_resnet_128_fold0.csv
-    md5: 6a861379568c9d8e94d90d7dbdeadb5b
+    md5: 80185d23760d2dd7088135fe55cbd966
   - path: subs/subs_resnet_128_fold1.csv
-    md5: 680a05c0987ce2863596f8a98367b0a2
+    md5: 344f028a7781adf4bd45f4197123390f
   - path: subs/subs_resnet_128_fold2.csv
-    md5: 6cc895e1db417e8436852eb42b0f3699
+    md5: bfdcca6a2e8138e7c3061c00d76ea424
   - path: subs/subs_resnet_128_fold3.csv
-    md5: 3fe3a011b43568e0bfd7ee66efd32c43
+    md5: ba1fbf913b1d469d6edec58f6654e1ae
   - path: subs/subs_resnet_128_fold4.csv
-    md5: 78a9fc11534e6b2f9b324d91e0ca92f2
+    md5: c2f71ce03157d9a63e3d379aa6f05d3d
 unzip_extra_malig_data:
   cmd: python pipe/add_extra_malig.py
   deps:
+  - path: data/train_128
+    md5: d04c4c8ef47b1f81a5f8db5ca48cc536.dir
+  - path: data/train_192
+    md5: 185af62b35d2914cf205b7a9094976aa.dir
+  - path: data/train_256
+    md5: 1956b28f215b75b89ede91d864196e38.dir
+  - path: data/train_384
+    md5: 5c1bf1e09e9d69afc1d1d678169b1c61.dir
+  - path: data/train_512
+    md5: dad0ba42319fddc5c335f179b0f528a3.dir
+  - path: jpeg-isic2019-128x128.zip
+    md5: 80ab82c9dc92968100e1dcc0b0379c65
+  - path: jpeg-isic2019-192x192.zip
+    md5: 4a3ca6be2e07ddbbb3807ccbdaadce32
+  - path: jpeg-isic2019-256x256.zip
+    md5: 82cb01de93e3d15737f627bfeae34de8
+  - path: jpeg-isic2019-384x384.zip
+    md5: 29341d9020e86c63de6ee749257fa744
+  - path: jpeg-isic2019-512x512.zip
+    md5: c9628a89b50b5b9965bec6cb656f562c
+  - path: malignant-v2-128x128.zip
+    md5: bb4f4cb68a16ba92f6ac21a23d89da90
+  - path: malignant-v2-192x192.zip
+    md5: 6c09ba79a90155fc733a66a63aa0edd7
+  - path: malignant-v2-256x256.zip
+    md5: a0b205e6ab2b8cc6b95e5e67ebdf4439
+  - path: malignant-v2-384x384.zip
+    md5: 2844989ad0d76af5884df4584c28c9d5
+  - path: malignant-v2-512x512.zip
+    md5: 83d28d848567826a457eec08f915e65b
   - path: pipe/add_extra_malig.py
     md5: 972eb9d11898ead919e29eca77fbb7c2
   outs:
@@ -291,3 +347,56 @@ train_resnet_256:
     md5: aba1c745897be689f11dfeeeec6b6759
   - path: subs/subs_resnet_256_fold4.csv
     md5: 376132713714dd4642b61e971412dd87
+train_efficientnet_256:
+  cmd: python pipe/train_efficientnet_256.py
+  deps:
+  - path: data/folds_with_extra.csv
+    md5: dd2832bd37791f544e7471f50d0a8ee1
+  - path: data/test.csv
+    md5: 90a1a5b724eb0cf2666fbd850d6f55b1
+  - path: data/test_256
+    md5: 112e0a5ed8c9d17787032dbaab97a758.dir
+  - path: data/train_256
+    md5: 1956b28f215b75b89ede91d864196e38.dir
+  - path: data/train_with_extra_256
+    md5: 2cdd4693c24ca870f6a1b25bf6aa3c60.dir
+  - path: pipe/train_efficientnet_256.py
+    md5: b102a8c9764fa528b414768c34eb83dc
+  params:
+    params.yaml:
+      train_efficientnet_256:
+        epochs: 20
+        arch: efficientnet-b4
+        precision: 16
+        sz: 256
+        bs: 32
+        lr: find
+        wd: 0.01
+        mom: 0.9
+  outs:
+  - path: data/l1_efficientnet_256_oof_preds.csv
+    md5: aeef0a6942cc378a3da8ea1db5329664
+  - path: metrics/l1_efficientnet_256_cv.metric
+    md5: 6af97f9b362780155223a5f4076282ca
+  - path: models/model_name=efficientnet_sz=256_fold=0.ckpt
+    md5: 485e0344b87973dd1f256d6f911acc21
+  - path: models/model_name=efficientnet_sz=256_fold=1.ckpt
+    md5: 9a8537d53b82ec4217e7d551069264de
+  - path: models/model_name=efficientnet_sz=256_fold=2.ckpt
+    md5: 079d319d68d119c896f3725b75513277
+  - path: models/model_name=efficientnet_sz=256_fold=3.ckpt
+    md5: 465aa53c670a8b08260dbade58282fb5
+  - path: models/model_name=efficientnet_sz=256_fold=4.ckpt
+    md5: b9da2e427f2e797d45a088938fa8caef
+  - path: subs/l1_efficientnet_256_submission.csv
+    md5: 3772c7e4b501cc26a584bf241c7d30df
+  - path: subs/subs_efficientnet_256_fold0.csv
+    md5: 855a1cd122963b72bb2b5f5a402a504e
+  - path: subs/subs_efficientnet_256_fold1.csv
+    md5: 962343f77271657ec45c2785ff18ef8e
+  - path: subs/subs_efficientnet_256_fold2.csv
+    md5: f883e82cd8511a40d44791b36c43d92c
+  - path: subs/subs_efficientnet_256_fold3.csv
+    md5: 8d356986b8a7e037a2df07849a4e3763
+  - path: subs/subs_efficientnet_256_fold4.csv
+    md5: c197ef9d73fe798355b862be1983170c
