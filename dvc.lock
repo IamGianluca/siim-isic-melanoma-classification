@@ -144,10 +144,12 @@ train_resnet_128:
     md5: 90a1a5b724eb0cf2666fbd850d6f55b1
   - path: data/test_128
     md5: 5364e325677bd83100a46caa1bf54bc5.dir
+  - path: data/train_128
+    md5: d04c4c8ef47b1f81a5f8db5ca48cc536.dir
   - path: data/train_with_extra_128
     md5: 15cdc0e17ae05d1c1a810f551c207ed2.dir
   - path: pipe/train_resnet_128.py
-    md5: 9a7f4a179a90eab0a662e7d1192247cc
+    md5: 72a60f1e99b40c955af4676b8823cdda
   params:
     params.yaml:
       train_resnet_128:
@@ -160,23 +162,65 @@ train_resnet_128:
         wd: 0.01
         mom: 0.9
   outs:
+  - path: data/l1_resnet_128_oof_preds.csv
+    md5: f1173c920c2e7e7f3c9fc02b005fa203
   - path: metrics/l1_resnet_128_cv.metric
-    md5: 52f65303a3a0bbea927c82976890b142
+    md5: f0d2f4499b17ece9379930e5d3a09648
+  - path: models/model_name=resnet_sz=128_fold=0.ckpt
+    md5: bc806bd7b652a7af0bf05bfd63da1d90
+  - path: models/model_name=resnet_sz=128_fold=1.ckpt
+    md5: 0dd62391a4a099a492e30967424bc818
+  - path: models/model_name=resnet_sz=128_fold=2.ckpt
+    md5: efbc3a43adea9aab8f1e35089a523c47
+  - path: models/model_name=resnet_sz=128_fold=3.ckpt
+    md5: 83d51fd0d6b2757da927d3666fa9315a
+  - path: models/model_name=resnet_sz=128_fold=4.ckpt
+    md5: 6c7bc598b466e00b6fdb66030cf47c2a
   - path: subs/l1_resnet_128_submission.csv
-    md5: 0e577009506bbcaacd0b02f9017b4390
+    md5: 04e19719d0c30e91a90eb849af4b02b4
   - path: subs/subs_resnet_128_fold0.csv
-    md5: 6a861379568c9d8e94d90d7dbdeadb5b
+    md5: 99b4cae813f4e6ecf6ebc820ded4af14
   - path: subs/subs_resnet_128_fold1.csv
-    md5: 680a05c0987ce2863596f8a98367b0a2
+    md5: 88bd54139ee24e82cfb24096dc1cb0da
   - path: subs/subs_resnet_128_fold2.csv
-    md5: 6cc895e1db417e8436852eb42b0f3699
+    md5: bec41a62bb9625c966f734d588ba7df6
   - path: subs/subs_resnet_128_fold3.csv
-    md5: 3fe3a011b43568e0bfd7ee66efd32c43
+    md5: 5d0b7b6fcbdcf89cb8b1e84030eed933
   - path: subs/subs_resnet_128_fold4.csv
-    md5: 78a9fc11534e6b2f9b324d91e0ca92f2
+    md5: 0723ebebd54a5e2f799922103ee4c955
 unzip_extra_malig_data:
   cmd: python pipe/add_extra_malig.py
   deps:
+  - path: data/train_128
+    md5: d04c4c8ef47b1f81a5f8db5ca48cc536.dir
+  - path: data/train_192
+    md5: 185af62b35d2914cf205b7a9094976aa.dir
+  - path: data/train_256
+    md5: 1956b28f215b75b89ede91d864196e38.dir
+  - path: data/train_384
+    md5: 5c1bf1e09e9d69afc1d1d678169b1c61.dir
+  - path: data/train_512
+    md5: dad0ba42319fddc5c335f179b0f528a3.dir
+  - path: jpeg-isic2019-128x128.zip
+    md5: 80ab82c9dc92968100e1dcc0b0379c65
+  - path: jpeg-isic2019-192x192.zip
+    md5: 4a3ca6be2e07ddbbb3807ccbdaadce32
+  - path: jpeg-isic2019-256x256.zip
+    md5: 82cb01de93e3d15737f627bfeae34de8
+  - path: jpeg-isic2019-384x384.zip
+    md5: 29341d9020e86c63de6ee749257fa744
+  - path: jpeg-isic2019-512x512.zip
+    md5: c9628a89b50b5b9965bec6cb656f562c
+  - path: malignant-v2-128x128.zip
+    md5: bb4f4cb68a16ba92f6ac21a23d89da90
+  - path: malignant-v2-192x192.zip
+    md5: 6c09ba79a90155fc733a66a63aa0edd7
+  - path: malignant-v2-256x256.zip
+    md5: a0b205e6ab2b8cc6b95e5e67ebdf4439
+  - path: malignant-v2-384x384.zip
+    md5: 2844989ad0d76af5884df4584c28c9d5
+  - path: malignant-v2-512x512.zip
+    md5: 83d28d848567826a457eec08f915e65b
   - path: pipe/add_extra_malig.py
     md5: 972eb9d11898ead919e29eca77fbb7c2
   outs:
@@ -291,3 +335,56 @@ train_resnet_256:
     md5: aba1c745897be689f11dfeeeec6b6759
   - path: subs/subs_resnet_256_fold4.csv
     md5: 376132713714dd4642b61e971412dd87
+train_efficientnet_256:
+  cmd: python pipe/train_efficientnet_256.py
+  deps:
+  - path: data/folds_with_extra.csv
+    md5: dd2832bd37791f544e7471f50d0a8ee1
+  - path: data/test.csv
+    md5: 90a1a5b724eb0cf2666fbd850d6f55b1
+  - path: data/test_256
+    md5: 112e0a5ed8c9d17787032dbaab97a758.dir
+  - path: data/train_256
+    md5: 1956b28f215b75b89ede91d864196e38.dir
+  - path: data/train_with_extra_256
+    md5: 2cdd4693c24ca870f6a1b25bf6aa3c60.dir
+  - path: pipe/train_efficientnet_256.py
+    md5: b102a8c9764fa528b414768c34eb83dc
+  params:
+    params.yaml:
+      train_efficientnet_256:
+        epochs: 20
+        arch: efficientnet-b4
+        precision: 16
+        sz: 256
+        bs: 32
+        lr: find
+        wd: 0.01
+        mom: 0.9
+  outs:
+  - path: data/l1_efficientnet_256_oof_preds.csv
+    md5: aeef0a6942cc378a3da8ea1db5329664
+  - path: metrics/l1_efficientnet_256_cv.metric
+    md5: 6af97f9b362780155223a5f4076282ca
+  - path: models/model_name=efficientnet_sz=256_fold=0.ckpt
+    md5: 485e0344b87973dd1f256d6f911acc21
+  - path: models/model_name=efficientnet_sz=256_fold=1.ckpt
+    md5: 9a8537d53b82ec4217e7d551069264de
+  - path: models/model_name=efficientnet_sz=256_fold=2.ckpt
+    md5: 079d319d68d119c896f3725b75513277
+  - path: models/model_name=efficientnet_sz=256_fold=3.ckpt
+    md5: 465aa53c670a8b08260dbade58282fb5
+  - path: models/model_name=efficientnet_sz=256_fold=4.ckpt
+    md5: b9da2e427f2e797d45a088938fa8caef
+  - path: subs/l1_efficientnet_256_submission.csv
+    md5: 3772c7e4b501cc26a584bf241c7d30df
+  - path: subs/subs_efficientnet_256_fold0.csv
+    md5: 855a1cd122963b72bb2b5f5a402a504e
+  - path: subs/subs_efficientnet_256_fold1.csv
+    md5: 962343f77271657ec45c2785ff18ef8e
+  - path: subs/subs_efficientnet_256_fold2.csv
+    md5: f883e82cd8511a40d44791b36c43d92c
+  - path: subs/subs_efficientnet_256_fold3.csv
+    md5: 8d356986b8a7e037a2df07849a4e3763
+  - path: subs/subs_efficientnet_256_fold4.csv
+    md5: c197ef9d73fe798355b862be1983170c

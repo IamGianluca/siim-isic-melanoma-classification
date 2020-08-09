@@ -39,9 +39,9 @@ from siim_isic_melanoma_classification.constants import (
     params_fpath,
     submissions_path,
     test_fpath,
-    test_img_128_path,
-    train_img_128_extra_path,
-    train_img_128_path,
+    test_img_256_path,
+    train_img_256_extra_path,
+    train_img_256_path,
 )
 from siim_isic_melanoma_classification.lr_scheduler import (
     DelayedCosineAnnealingLR,
@@ -51,10 +51,10 @@ from siim_isic_melanoma_classification.submit import prepare_submission
 from siim_isic_melanoma_classification.utils import dict_to_args
 
 params = load_hparams_from_yaml(params_fpath)
-hparams = dict_to_args(params["train_resnet_128"])
+hparams = dict_to_args(params["train_efficientnet_256"])
 logger = MLFlowLogger("logs/")
 
-name = "resnet"
+name = "efficientnet"
 oof_preds_fpath = data_path / f"l1_{name}_{hparams.sz}_oof_preds.csv"
 metric_fpath = metrics_path / f"l1_{name}_{hparams.sz}_cv.metric"
 submission_fpath = submissions_path / f"l1_{name}_{hparams.sz}_submission.csv"
@@ -145,9 +145,9 @@ def train(folds: pd.DataFrame, fold_number: int, path):
         train_df=train_df,
         valid_df=test_df,
         test_df=test_df,
-        train_images_path=train_img_128_extra_path,
-        valid_images_path=train_img_128_path,
-        test_images_path=train_img_128_path,  # NOTE: OOF predictions
+        train_images_path=train_img_256_extra_path,
+        valid_images_path=train_img_256_path,
+        test_images_path=train_img_256_path,  # NOTE: OOF predictions
         path=path,
     )
     callback = ModelCheckpoint(
@@ -165,6 +165,7 @@ def train(folds: pd.DataFrame, fold_number: int, path):
         num_sanity_val_steps=5,
         amp_level="O2" if hparams.precision == 32 else "O1",
         precision=hparams.precision,
+        accumulate_grad_batches=16,
         logger=logger,
         checkpoint_callback=callback,
     )
@@ -196,7 +197,7 @@ def inference(
 
     # make dataloader load full test data
     model.test_df = test_df
-    model.test_images_path = test_img_128_path
+    model.test_images_path = test_img_256_path
 
     results = list()
     for batch in model.test_dataloader():
@@ -225,7 +226,7 @@ class MyModel(LightningModule):
         super().__init__()
         self.path = path
         self.model_name = model_name
-        self.sz = 128
+        self.sz = 256
         self.hparams = hparams
         self.lr = self.hparams.lr
         self.fold = fold
@@ -245,6 +246,13 @@ class MyModel(LightningModule):
             self.model = nn.Sequential(
                 *list(self.model.children())[:-remove_range]
             )
+            n_out = 1
+            self.head = nn.Sequential(
+                nn.AdaptiveAvgPool2d(1),
+                Flatten(),
+                nn.Dropout(),
+                nn.Linear(n_in, n_out),
+            )
 
         # if "resnext" in self.hparams.arch:
         #     self.model = torch.hub.load(
@@ -255,16 +263,11 @@ class MyModel(LightningModule):
         #     remove_range = 2  # TODO: ditto
         if "efficient" in self.hparams.arch:
             self.model = EfficientNet.from_pretrained(
-                self.hparams.arch, advprop=True
+                self.hparams.arch, advprop=True, num_classes=1
             )
-            n_in = self.model._fc.out_features
-        n_out = 1
-        self.head = nn.Sequential(
-            nn.AdaptiveAvgPool2d(1),
-            Flatten(),
-            nn.Dropout(),
-            nn.Linear(n_in, n_out),
-        )
+            # self.head = nn.Sequential(
+            #     nn.ReLU(), nn.Dropout(), nn.Linear(1000, 1)
+            # )
 
     def train_dataloader(self):
         augmentations = Compose(
@@ -309,7 +312,7 @@ class MyModel(LightningModule):
 
     def forward(self, x):
         x = self.model(x)
-        x = self.head(x).squeeze(1)
+        # x = self.head(x).squeeze(1)
         return x
 
     def training_step(self, batch, batch_idx):
