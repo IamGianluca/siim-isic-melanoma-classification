@@ -165,7 +165,7 @@ train_resnet_128:
   params:
     params.yaml:
       train_resnet_128:
-        epochs: 10
+        epochs: 20
         arch: resnet34
         precision: 16
         sz: 128
@@ -175,31 +175,31 @@ train_resnet_128:
         mom: 0.9
   outs:
   - path: data/l1_resnet_128_oof_preds.csv
-    md5: f1173c920c2e7e7f3c9fc02b005fa203
+    md5: 03fa4707b03579843f69bdd1180a6e3d
   - path: metrics/l1_resnet_128_cv.metric
-    md5: f0d2f4499b17ece9379930e5d3a09648
+    md5: bfed817992af38d0a56418036ff05b69
   - path: models/model_name=resnet_sz=128_fold=0.ckpt
-    md5: bc806bd7b652a7af0bf05bfd63da1d90
+    md5: d205ae2392c9e65319cf7d7a74c1f7ff
   - path: models/model_name=resnet_sz=128_fold=1.ckpt
-    md5: 0dd62391a4a099a492e30967424bc818
+    md5: caa8dcb6a7b1749a6e9d71620de5d910
   - path: models/model_name=resnet_sz=128_fold=2.ckpt
-    md5: efbc3a43adea9aab8f1e35089a523c47
+    md5: 3eeb5f9a8e9f5ad47609af504ac76f74
   - path: models/model_name=resnet_sz=128_fold=3.ckpt
-    md5: 83d51fd0d6b2757da927d3666fa9315a
+    md5: 01f22f52d8d3adea7001964fa958e538
   - path: models/model_name=resnet_sz=128_fold=4.ckpt
-    md5: 6c7bc598b466e00b6fdb66030cf47c2a
+    md5: 9131fe4863560f8a545729184b42adad
   - path: subs/l1_resnet_128_submission.csv
-    md5: 04e19719d0c30e91a90eb849af4b02b4
+    md5: 03735c33a9127aa63deb00679d7fa468
   - path: subs/subs_resnet_128_fold0.csv
-    md5: 99b4cae813f4e6ecf6ebc820ded4af14
+    md5: 80185d23760d2dd7088135fe55cbd966
   - path: subs/subs_resnet_128_fold1.csv
-    md5: 88bd54139ee24e82cfb24096dc1cb0da
+    md5: 344f028a7781adf4bd45f4197123390f
   - path: subs/subs_resnet_128_fold2.csv
-    md5: bec41a62bb9625c966f734d588ba7df6
+    md5: bfdcca6a2e8138e7c3061c00d76ea424
   - path: subs/subs_resnet_128_fold3.csv
-    md5: 5d0b7b6fcbdcf89cb8b1e84030eed933
+    md5: ba1fbf913b1d469d6edec58f6654e1ae
   - path: subs/subs_resnet_128_fold4.csv
-    md5: 0723ebebd54a5e2f799922103ee4c955
+    md5: c2f71ce03157d9a63e3d379aa6f05d3d
 unzip_extra_malig_data:
   cmd: python pipe/add_extra_malig.py
   deps:
