@@ -140,6 +140,7 @@ def train(folds: pd.DataFrame, fold_number: int, path):
     # train model and report valid scores progress during training
     model = MyModel(
         hparams=hparams,
+        model_name=name,
         fold=fold_number,
         train_df=train_df,
         valid_df=test_df,
@@ -150,7 +151,7 @@ def train(folds: pd.DataFrame, fold_number: int, path):
         path=path,
     )
     callback = ModelCheckpoint(
-        filepath=models_path,
+        filepath=models_path / "{model_name}_{sz}_{fold}",
         monitor="val_auc",
         mode="max",
         save_weights_only=True,
@@ -160,7 +161,6 @@ def train(folds: pd.DataFrame, fold_number: int, path):
     trainer = Trainer(
         gpus=1,
         max_epochs=hparams.epochs,
-        # auto_lr_find=True,
         # overfit_batches=5,
         accumulate_grad_batches=32,
         num_sanity_val_steps=5,
@@ -213,6 +213,7 @@ class MyModel(LightningModule):
     def __init__(
         self,
         hparams,
+        model_name: Optional[str] = None,
         fold: Optional[int] = None,
         train_df: Optional[pd.DataFrame] = None,
         valid_df: Optional[pd.DataFrame] = None,
@@ -224,6 +225,8 @@ class MyModel(LightningModule):
     ):
         super().__init__()
         self.path = path
+        self.model_name = model_name
+        self.sz = 384
         self.hparams = hparams
         self.lr = self.hparams.lr
         self.fold = fold
@@ -260,7 +263,7 @@ class MyModel(LightningModule):
         #     remove_range = 2  # TODO: ditto
         if "efficient" in self.hparams.arch:
             self.model = EfficientNet.from_pretrained(
-                self.hparams.arch, advprop=True
+                self.hparams.arch, advprop=True,
             )
             self.head = nn.Sequential(
                 nn.ReLU(), nn.Dropout(), nn.Linear(1000, 1)
@@ -304,7 +307,7 @@ class MyModel(LightningModule):
             batch_size=self.hparams.bs,
             shuffle=True,
             num_workers=os.cpu_count(),
-            pin_memory=False,
+            pin_memory=True,
         )
 
     def forward(self, x):
@@ -375,7 +378,7 @@ class MyModel(LightningModule):
             batch_size=self.hparams.bs,
             shuffle=False,
             num_workers=os.cpu_count(),
-            pin_memory=False,
+            pin_memory=True,
         )
 
     def test_dataloader(self):
@@ -398,7 +401,7 @@ class MyModel(LightningModule):
             batch_size=self.hparams.bs,
             shuffle=False,
             num_workers=os.cpu_count(),
-            pin_memory=False,
+            pin_memory=True,
         )
 
     def validation_step(self, batch, batch_idx):
@@ -420,7 +423,13 @@ class MyModel(LightningModule):
             print(f"ValueError: {err}")
             val_auc = torch.Tensor([0])
 
-        logs = {"val_loss": val_loss, "val_auc": val_auc}
+        logs = {
+            "val_loss": val_loss,
+            "val_auc": val_auc,
+            "model_name": self.model_name,
+            "fold": self.fold,
+            "sz": self.sz,
+        }
         return {
             "log": logs,
         }

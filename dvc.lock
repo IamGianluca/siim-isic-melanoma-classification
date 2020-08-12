@@ -101,12 +101,14 @@ train_efficientnet_384:
     md5: dd2832bd37791f544e7471f50d0a8ee1
   - path: data/test.csv
     md5: 90a1a5b724eb0cf2666fbd850d6f55b1
-  - path: data/test_128
-    md5: 5364e325677bd83100a46caa1bf54bc5.dir
+  - path: data/test_384
+    md5: bf00d2deb0e134d787d22959f9e8a7f6.dir
+  - path: data/train_384
+    md5: 5c1bf1e09e9d69afc1d1d678169b1c61.dir
   - path: data/train_with_extra_384
     md5: e72675d7490d03e5deb30d3e3f7fe1ac.dir
   - path: pipe/train_efficientnet_384.py
-    md5: d17e49c07e6bc6ac2fdcb6a89a4bdee8
+    md5: 9809b6d5498d8483328cfb546506243b
   params:
     params.yaml:
       train_efficientnet_384:
@@ -120,21 +122,31 @@ train_efficientnet_384:
         mom: 0.9
   outs:
   - path: data/l1_efficientnet_384_oof_preds.csv
-    md5: 4b0ba34d1796054e1409a6cf335b201c
+    md5: 193db64d238627d341d9f47236a53ec8
   - path: metrics/l1_efficientnet_384_cv.metric
-    md5: 647f76be334279ca08c3405abc9fff47
+    md5: 4a5642653b5f7104dccc27fe8277d3b4
+  - path: models/model_name=efficientnet_sz=384_fold=0.ckpt
+    md5: 8eba401321c879675b0052e491466004
+  - path: models/model_name=efficientnet_sz=384_fold=1.ckpt
+    md5: df54bd16fe1a5ff105105f24eca5328f
+  - path: models/model_name=efficientnet_sz=384_fold=2.ckpt
+    md5: cc8e1ccfd7f9aa2037786a82471d1f06
+  - path: models/model_name=efficientnet_sz=384_fold=3.ckpt
+    md5: 0c1887338b277a9a98571f127df5a5d9
+  - path: models/model_name=efficientnet_sz=384_fold=4.ckpt
+    md5: 5b8bdae6cdcb5ba48853b4a3a5ba44bc
   - path: subs/l1_efficientnet_384_submission.csv
-    md5: 20764ee1abe5640967f6b5bc895200ac
+    md5: 2ddfb3a55d82ddc0b441334ff3fde6a6
   - path: subs/subs_efficientnet_384_fold0.csv
-    md5: c32d3f55c703fb18ecb0e1b40249d1ff
+    md5: 9566945fe7f198806c20ec369570c9b0
   - path: subs/subs_efficientnet_384_fold1.csv
-    md5: 423713726508c15c0998611f7da9252e
+    md5: c47a7fed8a3fc99ca23cceb93b00b5d7
   - path: subs/subs_efficientnet_384_fold2.csv
-    md5: 821c7126531e8a58d29945af3bcee2ae
+    md5: d05755f2aa7857c189b944089aae9b73
   - path: subs/subs_efficientnet_384_fold3.csv
-    md5: e452bfbe3154795ae39870d4e804c287
+    md5: c00554e328e8a1a1040bbfbd5399a3b2
   - path: subs/subs_efficientnet_384_fold4.csv
-    md5: 0a365aac3c608bb015700a93f2cf12f9
+    md5: 08d3829063da9634b41e40d56fe72492
 train_resnet_128:
   cmd: python pipe/train_resnet_128.py
   deps:

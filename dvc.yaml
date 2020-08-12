@@ -238,6 +238,11 @@ stages:
     - subs/subs_efficientnet_384_fold2.csv
     - subs/subs_efficientnet_384_fold3.csv
     - subs/subs_efficientnet_384_fold4.csv
+    - models/model_name=efficientnet_sz=384_fold=0.ckpt
+    - models/model_name=efficientnet_sz=384_fold=1.ckpt
+    - models/model_name=efficientnet_sz=384_fold=2.ckpt
+    - models/model_name=efficientnet_sz=384_fold=3.ckpt
+    - models/model_name=efficientnet_sz=384_fold=4.ckpt
     metrics:
     - metrics/l1_efficientnet_384_cv.metric:
         cache: false
