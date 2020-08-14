@@ -39,9 +39,9 @@ from siim_isic_melanoma_classification.constants import (
     params_fpath,
     submissions_path,
     test_fpath,
-    test_img_384_path,
-    train_img_384_extra_path,
-    train_img_384_path,
+    test_img_256_path,
+    train_img_256_extra_path,
+    train_img_256_path,
 )
 from siim_isic_melanoma_classification.lr_scheduler import (
     DelayedCosineAnnealingLR,
@@ -51,7 +51,7 @@ from siim_isic_melanoma_classification.submit import prepare_submission
 from siim_isic_melanoma_classification.utils import dict_to_args
 
 params = load_hparams_from_yaml(params_fpath)
-hparams = dict_to_args(params["train_efficientnet_384"])
+hparams = dict_to_args(params["train_efficientnet_256"])
 logger = MLFlowLogger("logs/")
 
 name = "efficientnet"
@@ -145,9 +145,9 @@ def train(folds: pd.DataFrame, fold_number: int, path):
         train_df=train_df,
         valid_df=test_df,
         test_df=test_df,
-        train_images_path=train_img_384_extra_path,
-        valid_images_path=train_img_384_path,
-        test_images_path=train_img_384_path,  # NOTE: OOF predictions
+        train_images_path=train_img_256_extra_path,
+        valid_images_path=train_img_256_path,
+        test_images_path=train_img_256_path,  # NOTE: OOF predictions
         path=path,
     )
     callback = ModelCheckpoint(
@@ -162,10 +162,10 @@ def train(folds: pd.DataFrame, fold_number: int, path):
         gpus=1,
         max_epochs=hparams.epochs,
         # overfit_batches=5,
-        accumulate_grad_batches=32,
         num_sanity_val_steps=5,
         amp_level="O2" if hparams.precision == 32 else "O1",
         precision=hparams.precision,
+        accumulate_grad_batches=16,
         logger=logger,
         checkpoint_callback=callback,
     )
@@ -197,7 +197,7 @@ def inference(
 
     # make dataloader load full test data
     model.test_df = test_df
-    model.test_images_path = test_img_384_path
+    model.test_images_path = test_img_256_path
 
     results = list()
     for batch in model.test_dataloader():
@@ -226,7 +226,7 @@ class MyModel(LightningModule):
         super().__init__()
         self.path = path
         self.model_name = model_name
-        self.sz = 384
+        self.sz = 256
         self.hparams = hparams
         self.lr = self.hparams.lr
         self.fold = fold
@@ -263,11 +263,11 @@ class MyModel(LightningModule):
         #     remove_range = 2  # TODO: ditto
         if "efficient" in self.hparams.arch:
             self.model = EfficientNet.from_pretrained(
-                self.hparams.arch, advprop=True,
+                self.hparams.arch, advprop=True, num_classes=1
             )
-            self.head = nn.Sequential(
-                nn.ReLU(), nn.Dropout(), nn.Linear(1000, 1)
-            )
+            # self.head = nn.Sequential(
+            #     nn.ReLU(), nn.Dropout(), nn.Linear(1000, 1)
+            # )
 
     def train_dataloader(self):
         augmentations = Compose(
@@ -312,7 +312,7 @@ class MyModel(LightningModule):
 
     def forward(self, x):
         x = self.model(x)
-        x = self.head(x).squeeze(1)
+        # x = self.head(x).squeeze(1)
         return x
 
     def training_step(self, batch, batch_idx):
@@ -416,12 +416,7 @@ class MyModel(LightningModule):
         ).mean()
         y_pred = torch.cat([out["y_pred"] for out in outputs], dim=0)
         y_true = torch.cat([out["y_true"] for out in outputs], dim=0)
-
-        try:
-            val_auc = auroc(y_pred, y_true)
-        except ValueError as err:
-            print(f"ValueError: {err}")
-            val_auc = torch.Tensor([0])
+        val_auc = auroc(y_pred, y_true)
 
         logs = {
             "val_loss": val_loss,

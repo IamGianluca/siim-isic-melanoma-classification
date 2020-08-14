@@ -140,6 +140,7 @@ def train(folds: pd.DataFrame, fold_number: int, path):
     # train model and report valid scores progress during training
     model = MyModel(
         hparams=hparams,
+        model_name=name,
         fold=fold_number,
         train_df=train_df,
         valid_df=test_df,
@@ -150,7 +151,7 @@ def train(folds: pd.DataFrame, fold_number: int, path):
         path=path,
     )
     callback = ModelCheckpoint(
-        filepath=models_path,
+        filepath=models_path / "{model_name}_{sz}_{fold}",
         monitor="val_auc",
         mode="max",
         save_weights_only=True,
@@ -212,6 +213,7 @@ class MyModel(LightningModule):
     def __init__(
         self,
         hparams,
+        model_name: Optional[str] = None,
         fold: Optional[int] = None,
         train_df: Optional[pd.DataFrame] = None,
         valid_df: Optional[pd.DataFrame] = None,
@@ -223,6 +225,8 @@ class MyModel(LightningModule):
     ):
         super().__init__()
         self.path = path
+        self.model_name = model_name
+        self.sz = 128
         self.hparams = hparams
         self.lr = self.hparams.lr
         self.fold = fold
@@ -301,7 +305,7 @@ class MyModel(LightningModule):
             batch_size=self.hparams.bs,
             shuffle=True,
             num_workers=os.cpu_count(),
-            pin_memory=False,
+            pin_memory=True,
         )
 
     def forward(self, x):
@@ -372,7 +376,7 @@ class MyModel(LightningModule):
             batch_size=self.hparams.bs,
             shuffle=False,
             num_workers=os.cpu_count(),
-            pin_memory=False,
+            pin_memory=True,
         )
 
     def test_dataloader(self):
@@ -395,7 +399,7 @@ class MyModel(LightningModule):
             batch_size=self.hparams.bs,
             shuffle=False,
             num_workers=os.cpu_count(),
-            pin_memory=False,
+            pin_memory=True,
         )
 
     def validation_step(self, batch, batch_idx):
@@ -412,7 +416,13 @@ class MyModel(LightningModule):
         y_true = torch.cat([out["y_true"] for out in outputs], dim=0)
         val_auc = auroc(y_pred, y_true)
 
-        logs = {"val_loss": val_loss, "val_auc": val_auc}
+        logs = {
+            "val_loss": val_loss,
+            "val_auc": val_auc,
+            "model_name": self.model_name,
+            "fold": self.fold,
+            "sz": self.sz,
+        }
         return {
             "log": logs,
         }

@@ -1,4 +1,41 @@
 stages:
+  dupes:
+    cmd: wget -O data/dupes.csv https://storage.googleapis.com/kaggle-forum-message-attachments/903372/16145/2020_Challenge_duplicates.csv
+    outs:
+    - data/dupes.csv
+    frozen: true
+  download_train_extra_128:
+    cmd: kaggle datasets download -d cdeotte/malignant-v2-128x128
+    outs:
+    - malignant-v2-128x128.zip
+    frozen: true
+  download_train_extra_192:
+    cmd: kaggle datasets download -d cdeotte/malignant-v2-192x192
+    outs:
+    - malignant-v2-192x192.zip
+    frozen: true
+  download_train_extra_256:
+    cmd: kaggle datasets download -d cdeotte/malignant-v2-256x256
+    outs:
+    - malignant-v2-256x256.zip
+    frozen: true
+  download_train_extra_384:
+    cmd: kaggle datasets download -d cdeotte/malignant-v2-384x384
+    outs:
+    - malignant-v2-384x384.zip
+    frozen: true
+  download_train_extra_512:
+    cmd: kaggle datasets download -d cdeotte/malignant-v2-512x512
+    outs:
+    - malignant-v2-512x512.zip
+    frozen: true
+  split:
+    cmd: python pipe/split.py
+    deps:
+    - pipe/split.py
+    - data/train.csv
+    outs:
+    - data/folds.csv
   resize_images:
     cmd: python pipe/resize_images.py
     deps:
@@ -22,37 +59,6 @@ stages:
     - data/test_768
     - data/train_1024
     - data/test_1024
-  dupes:
-    cmd: wget -O data/dupes.csv https://storage.googleapis.com/kaggle-forum-message-attachments/903372/16145/2020_Challenge_duplicates.csv
-    outs:
-    - data/dupes.csv
-  download_train_extra_128:
-    cmd: kaggle datasets download -d cdeotte/malignant-v2-128x128
-    outs:
-    - malignant-v2-128x128.zip
-  download_train_extra_192:
-    cmd: kaggle datasets download -d cdeotte/malignant-v2-192x192
-    outs:
-    - malignant-v2-192x192.zip
-  download_train_extra_256:
-    cmd: kaggle datasets download -d cdeotte/malignant-v2-256x256
-    outs:
-    - malignant-v2-256x256.zip
-  download_train_extra_384:
-    cmd: kaggle datasets download -d cdeotte/malignant-v2-384x384
-    outs:
-    - malignant-v2-384x384.zip
-  download_train_extra_512:
-    cmd: kaggle datasets download -d cdeotte/malignant-v2-512x512
-    outs:
-    - malignant-v2-512x512.zip
-  split:
-    cmd: python pipe/split.py
-    deps:
-    - pipe/split.py
-    - data/train.csv
-    outs:
-    - data/folds.csv
   train_lr:
     cmd: python pipe/train_lr.py
     deps:
@@ -62,52 +68,25 @@ stages:
     outs:
     - metrics/cv.metric
     - models/stage1_lr.joblib
-  train_efficientnet_384:
-    cmd: python pipe/train_efficientnet_384.py
-    deps:
-    - data/folds_with_extra.csv
-    - data/test.csv
-    - data/test_128
-    - data/train_with_extra_384
-    - pipe/train_efficientnet_384.py
-    params:
-    - train_efficientnet_384
-    outs:
-    - data/l1_efficientnet_384_oof_preds.csv
-    - subs/l1_efficientnet_384_submission.csv
-    - subs/subs_efficientnet_384_fold0.csv
-    - subs/subs_efficientnet_384_fold1.csv
-    - subs/subs_efficientnet_384_fold2.csv
-    - subs/subs_efficientnet_384_fold3.csv
-    - subs/subs_efficientnet_384_fold4.csv
-    metrics:
-    - metrics/l1_efficientnet_384_cv.metric:
-        cache: false
-
-  train_resnet_128:
-    cmd: python pipe/train_resnet_128.py
-    deps:
-    - data/folds_with_extra.csv
-    - data/test.csv
-    - data/test_128
-    - data/train_with_extra_128
-    - pipe/train_resnet_128.py
-    params:
-    - train_resnet_128
-    outs:
-    - subs/l1_resnet_128_submission.csv
-    - subs/subs_resnet_128_fold0.csv
-    - subs/subs_resnet_128_fold1.csv
-    - subs/subs_resnet_128_fold2.csv
-    - subs/subs_resnet_128_fold3.csv
-    - subs/subs_resnet_128_fold4.csv
-    metrics:
-    - metrics/l1_resnet_128_cv.metric:
-        cache: false
   unzip_extra_malig_data:
     cmd: python pipe/add_extra_malig.py
     deps:
     - pipe/add_extra_malig.py
+    - data/train_128
+    - data/train_192
+    - data/train_256
+    - data/train_384
+    - data/train_512
+    - jpeg-isic2019-128x128.zip
+    - jpeg-isic2019-192x192.zip
+    - jpeg-isic2019-256x256.zip
+    - jpeg-isic2019-384x384.zip
+    - jpeg-isic2019-512x512.zip
+    - malignant-v2-128x128.zip
+    - malignant-v2-192x192.zip
+    - malignant-v2-256x256.zip
+    - malignant-v2-384x384.zip
+    - malignant-v2-512x512.zip
     outs:
     - data/train_malig_1.csv
     - data/train_malig_2.csv
@@ -131,32 +110,65 @@ stages:
     cmd: kaggle datasets download -d cdeotte/jpeg-isic2019-128x128
     outs:
     - jpeg-isic2019-128x128.zip
+    frozen: true
   download_train_2019_192:
     cmd: kaggle datasets download -d cdeotte/jpeg-isic2019-192x192
     outs:
     - jpeg-isic2019-192x192.zip
+    frozen: true
   download_train_2019_384:
     cmd: kaggle datasets download -d cdeotte/jpeg-isic2019-384x384
     outs:
     - jpeg-isic2019-384x384.zip
+    frozen: true
   download_train_2019_256:
     cmd: kaggle datasets download -d cdeotte/jpeg-isic2019-256x256
     outs:
     - jpeg-isic2019-256x256.zip
+    frozen: true
   download_train_2019_512:
     cmd: kaggle datasets download -d cdeotte/jpeg-isic2019-512x512
     outs:
     - jpeg-isic2019-512x512.zip
+    frozen: true
   download_hair:
     cmd: kaggle datasets download -d nroman/melanoma-hairs
     outs:
     - melanoma-hairs.zip
-  unzip_hairs:
+    frozen: true
+  unzip_hair:
     cmd: unzip melanoma-hairs.zip -d data/hairs/
     deps:
     - melanoma-hairs.zip
     outs:
     - data/hairs/
+  train_resnet_128:
+    cmd: python pipe/train_resnet_128.py
+    deps:
+    - data/folds_with_extra.csv
+    - data/test.csv
+    - data/test_128
+    - data/train_128
+    - data/train_with_extra_128
+    - pipe/train_resnet_128.py
+    params:
+    - train_resnet_128
+    outs:
+    - data/l1_resnet_128_oof_preds.csv
+    - subs/l1_resnet_128_submission.csv
+    - subs/subs_resnet_128_fold0.csv
+    - subs/subs_resnet_128_fold1.csv
+    - subs/subs_resnet_128_fold2.csv
+    - subs/subs_resnet_128_fold3.csv
+    - subs/subs_resnet_128_fold4.csv
+    - models/model_name=resnet_sz=128_fold=0.ckpt
+    - models/model_name=resnet_sz=128_fold=1.ckpt
+    - models/model_name=resnet_sz=128_fold=2.ckpt
+    - models/model_name=resnet_sz=128_fold=3.ckpt
+    - models/model_name=resnet_sz=128_fold=4.ckpt
+    metrics:
+    - metrics/l1_resnet_128_cv.metric:
+        cache: false
   train_resnet_256:
     cmd: python pipe/train_resnet_256.py
     deps:
@@ -164,11 +176,13 @@ stages:
     - data/hairs
     - data/test.csv
     - data/test_256
+    - data/train_256
     - data/train_with_extra_256
     - pipe/train_resnet_256.py
     params:
     - train_resnet_256
     outs:
+    - data/l1_resnet_256_oof_preds.csv
     - subs/l1_resnet_256_submission.csv
     - subs/subs_resnet_256_fold0.csv
     - subs/subs_resnet_256_fold1.csv
@@ -177,4 +191,85 @@ stages:
     - subs/subs_resnet_256_fold4.csv
     metrics:
     - metrics/l1_resnet_256_cv.metric:
+        cache: false
+  train_efficientnet_256:
+    cmd: python pipe/train_efficientnet_256.py
+    deps:
+    - data/folds_with_extra.csv
+    - data/test.csv
+    - data/test_256
+    - data/train_256
+    - data/train_with_extra_256
+    - pipe/train_efficientnet_256.py
+    params:
+    - train_efficientnet_256
+    outs:
+    - data/l1_efficientnet_256_oof_preds.csv
+    - subs/l1_efficientnet_256_submission.csv
+    - subs/subs_efficientnet_256_fold0.csv
+    - subs/subs_efficientnet_256_fold1.csv
+    - subs/subs_efficientnet_256_fold2.csv
+    - subs/subs_efficientnet_256_fold3.csv
+    - subs/subs_efficientnet_256_fold4.csv
+    - models/model_name=efficientnet_sz=256_fold=0.ckpt
+    - models/model_name=efficientnet_sz=256_fold=1.ckpt
+    - models/model_name=efficientnet_sz=256_fold=2.ckpt
+    - models/model_name=efficientnet_sz=256_fold=3.ckpt
+    - models/model_name=efficientnet_sz=256_fold=4.ckpt
+    metrics:
+    - metrics/l1_efficientnet_256_cv.metric:
+        cache: false
+  train_efficientnet_384:
+    cmd: python pipe/train_efficientnet_384.py
+    deps:
+    - data/folds_with_extra.csv
+    - data/test.csv
+    - data/test_384
+    - data/train_384
+    - data/train_with_extra_384
+    - pipe/train_efficientnet_384.py
+    params:
+    - train_efficientnet_384
+    outs:
+    - data/l1_efficientnet_384_oof_preds.csv
+    - subs/l1_efficientnet_384_submission.csv
+    - subs/subs_efficientnet_384_fold0.csv
+    - subs/subs_efficientnet_384_fold1.csv
+    - subs/subs_efficientnet_384_fold2.csv
+    - subs/subs_efficientnet_384_fold3.csv
+    - subs/subs_efficientnet_384_fold4.csv
+    - models/model_name=efficientnet_sz=384_fold=0.ckpt
+    - models/model_name=efficientnet_sz=384_fold=1.ckpt
+    - models/model_name=efficientnet_sz=384_fold=2.ckpt
+    - models/model_name=efficientnet_sz=384_fold=3.ckpt
+    - models/model_name=efficientnet_sz=384_fold=4.ckpt
+    metrics:
+    - metrics/l1_efficientnet_384_cv.metric:
+        cache: false
+  train_resnest_256:
+    cmd: python pipe/train_resnest_256.py
+    deps:
+    - data/folds_with_extra.csv
+    - data/test.csv
+    - data/test_256
+    - data/train_256
+    - data/train_with_extra_256
+    - pipe/train_resnest_256.py
+    params:
+    - train_resnest_256
+    outs:
+    - data/l1_resnest_256_oof_preds.csv
+    - subs/l1_resnest_256_submission.csv
+    - subs/subs_resnest_256_fold0.csv
+    - subs/subs_resnest_256_fold1.csv
+    - subs/subs_resnest_256_fold2.csv
+    - subs/subs_resnest_256_fold3.csv
+    - subs/subs_resnest_256_fold4.csv
+    - models/model_name=resnest_sz=256_fold=0.ckpt
+    - models/model_name=resnest_sz=256_fold=1.ckpt
+    - models/model_name=resnest_sz=256_fold=2.ckpt
+    - models/model_name=resnest_sz=256_fold=3.ckpt
+    - models/model_name=resnest_sz=256_fold=4.ckpt
+    metrics:
+    - metrics/l1_resnest_256_cv.metric:
         cache: false
