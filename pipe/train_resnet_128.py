@@ -161,6 +161,7 @@ def train(folds: pd.DataFrame, fold_number: int, path):
     trainer = Trainer(
         gpus=1,
         max_epochs=hparams.epochs,
+        # auto_lr_find=True,
         # overfit_batches=5,
         num_sanity_val_steps=5,
         amp_level="O2" if hparams.precision == 32 else "O1",
