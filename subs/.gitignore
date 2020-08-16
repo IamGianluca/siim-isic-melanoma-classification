@@ -26,3 +26,6 @@
 /subs_efficientnet_256_fold2.csv
 /subs_efficientnet_256_fold3.csv
 /subs_efficientnet_256_fold4.csv
+/l1_resnet_tta_128_submission.csv
+/l1_efficientnet_tta_384_submission.csv
+/l1_efficientnet_tta_256_submission.csv

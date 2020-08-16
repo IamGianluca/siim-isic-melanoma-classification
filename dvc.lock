@@ -340,3 +340,102 @@ train_efficientnet_256:
     md5: 8d356986b8a7e037a2df07849a4e3763
   - path: subs/subs_efficientnet_256_fold4.csv
     md5: c197ef9d73fe798355b862be1983170c
+predict_resnet_128:
+  cmd: python pipe/predict_resnet_128.py
+  deps:
+  - path: models/model_name=resnet_sz=128_fold=0.ckpt
+    md5: d205ae2392c9e65319cf7d7a74c1f7ff
+  - path: models/model_name=resnet_sz=128_fold=1.ckpt
+    md5: caa8dcb6a7b1749a6e9d71620de5d910
+  - path: models/model_name=resnet_sz=128_fold=2.ckpt
+    md5: 3eeb5f9a8e9f5ad47609af504ac76f74
+  - path: models/model_name=resnet_sz=128_fold=3.ckpt
+    md5: 01f22f52d8d3adea7001964fa958e538
+  - path: models/model_name=resnet_sz=128_fold=4.ckpt
+    md5: 9131fe4863560f8a545729184b42adad
+  - path: pipe/predict_resnet_128.py
+    md5: 56f945f1a77396c8cf0b469982b7c1de
+  params:
+    params.yaml:
+      train_resnet_128:
+        epochs: 20
+        arch: resnet34
+        precision: 16
+        sz: 128
+        bs: 512
+        lr: find
+        wd: 0.01
+        mom: 0.9
+  outs:
+  - path: data/oof_preds_resnet_tta_128.csv
+    md5: a0b6933b2bd7a6cbb95d65ff37aeb72b
+  - path: metrics/l1_resnet_tta_128_cv.metric
+    md5: baec01116f70d76e7f12b880a6868e39
+  - path: subs/l1_resnet_tta_128_submission.csv
+    md5: 484b2fa908d1e9cb59757b58bf5162ef
+predict_efficientnet_384:
+  cmd: python pipe/predict_efficientnet_384.py
+  deps:
+  - path: models/model_name=efficientnet_sz=384_fold=0.ckpt
+    md5: 8eba401321c879675b0052e491466004
+  - path: models/model_name=efficientnet_sz=384_fold=1.ckpt
+    md5: df54bd16fe1a5ff105105f24eca5328f
+  - path: models/model_name=efficientnet_sz=384_fold=2.ckpt
+    md5: cc8e1ccfd7f9aa2037786a82471d1f06
+  - path: models/model_name=efficientnet_sz=384_fold=3.ckpt
+    md5: 0c1887338b277a9a98571f127df5a5d9
+  - path: models/model_name=efficientnet_sz=384_fold=4.ckpt
+    md5: 5b8bdae6cdcb5ba48853b4a3a5ba44bc
+  - path: pipe/predict_efficientnet_384.py
+    md5: 6fd91adcb7f085d0a9c86f99d633bffc
+  params:
+    params.yaml:
+      train_efficientnet_384:
+        epochs: 15
+        arch: efficientnet-b4
+        precision: 16
+        sz: 384
+        bs: 16
+        lr: find
+        wd: 0.01
+        mom: 0.9
+  outs:
+  - path: data/oof_preds_efficientnet_tta_384.csv
+    md5: fa0d8cf6ba559d48a7113eccec3f8e83
+  - path: metrics/l1_efficientnet_tta_384_cv.metric
+    md5: 934039c166b70e99e2c270878c3b0a0a
+  - path: subs/l1_efficientnet_tta_384_submission.csv
+    md5: cf3b5ca4fe4e544956cf7d3a72c2f4f3
+predict_efficientnet_256:
+  cmd: python pipe/predict_efficientnet_256.py
+  deps:
+  - path: models/model_name=efficientnet_sz=256_fold=0.ckpt
+    md5: 485e0344b87973dd1f256d6f911acc21
+  - path: models/model_name=efficientnet_sz=256_fold=1.ckpt
+    md5: 9a8537d53b82ec4217e7d551069264de
+  - path: models/model_name=efficientnet_sz=256_fold=2.ckpt
+    md5: 079d319d68d119c896f3725b75513277
+  - path: models/model_name=efficientnet_sz=256_fold=3.ckpt
+    md5: 465aa53c670a8b08260dbade58282fb5
+  - path: models/model_name=efficientnet_sz=256_fold=4.ckpt
+    md5: b9da2e427f2e797d45a088938fa8caef
+  - path: pipe/predict_efficientnet_256.py
+    md5: c4870e3c03e5e7d190122d74a29ceea7
+  params:
+    params.yaml:
+      train_efficientnet_256:
+        epochs: 20
+        arch: efficientnet-b4
+        precision: 16
+        sz: 256
+        bs: 32
+        lr: find
+        wd: 0.01
+        mom: 0.9
+  outs:
+  - path: data/oof_preds_efficientnet_tta_256.csv
+    md5: 854616cbc8c9e8803c201467bdc32a9d
+  - path: metrics/l1_efficientnet_tta_256_cv.metric
+    md5: ca7ea19513f62d3210453274448ecb23
+  - path: subs/l1_efficientnet_tta_256_submission.csv
+    md5: 343c92d2f4bc9fb8cd5eb20f6df1fc6e

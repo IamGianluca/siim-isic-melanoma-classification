@@ -203,3 +203,54 @@ stages:
     metrics:
     - metrics/l1_efficientnet_384_cv.metric:
         cache: false
+  predict_resnet_128:
+    cmd: python pipe/predict_resnet_128.py
+    deps:
+    - models/model_name=resnet_sz=128_fold=0.ckpt
+    - models/model_name=resnet_sz=128_fold=1.ckpt
+    - models/model_name=resnet_sz=128_fold=2.ckpt
+    - models/model_name=resnet_sz=128_fold=3.ckpt
+    - models/model_name=resnet_sz=128_fold=4.ckpt
+    - pipe/predict_resnet_128.py
+    params:
+    - train_resnet_128
+    outs:
+    - data/oof_preds_resnet_tta_128.csv
+    - subs/l1_resnet_tta_128_submission.csv
+    metrics:
+    - metrics/l1_resnet_tta_128_cv.metric:
+        cache: false
+  predict_efficientnet_256:
+    cmd: python pipe/predict_efficientnet_256.py
+    deps:
+    - models/model_name=efficientnet_sz=256_fold=0.ckpt
+    - models/model_name=efficientnet_sz=256_fold=1.ckpt
+    - models/model_name=efficientnet_sz=256_fold=2.ckpt
+    - models/model_name=efficientnet_sz=256_fold=3.ckpt
+    - models/model_name=efficientnet_sz=256_fold=4.ckpt
+    - pipe/predict_efficientnet_256.py
+    params:
+    - train_efficientnet_256
+    outs:
+    - data/oof_preds_efficientnet_tta_256.csv
+    - subs/l1_efficientnet_tta_256_submission.csv
+    metrics:
+    - metrics/l1_efficientnet_tta_256_cv.metric:
+        cache: false
+  predict_efficientnet_384:
+    cmd: python pipe/predict_efficientnet_384.py
+    deps:
+    - models/model_name=efficientnet_sz=384_fold=0.ckpt
+    - models/model_name=efficientnet_sz=384_fold=1.ckpt
+    - models/model_name=efficientnet_sz=384_fold=2.ckpt
+    - models/model_name=efficientnet_sz=384_fold=3.ckpt
+    - models/model_name=efficientnet_sz=384_fold=4.ckpt
+    - pipe/predict_efficientnet_384.py
+    params:
+    - train_efficientnet_384
+    outs:
+    - data/oof_preds_efficientnet_tta_384.csv
+    - subs/l1_efficientnet_tta_384_submission.csv
+    metrics:
+    - metrics/l1_efficientnet_tta_384_cv.metric:
+        cache: false
