@@ -22,9 +22,6 @@ from torch import nn
 from torch.utils.data import DataLoader
 from torchvision import models
 
-from siim_isic_melanoma_classification.augmentation import (
-    AdvancedHairAugmentation,
-)
 from siim_isic_melanoma_classification.cnn import (
     Flatten,
     FocalLoss,
@@ -39,9 +36,9 @@ from siim_isic_melanoma_classification.constants import (
     params_fpath,
     submissions_path,
     test_fpath,
-    test_img_384_path,
-    train_img_384_extra_path,
-    train_img_384_path,
+    test_img_512_path,
+    train_img_512_extra_path,
+    train_img_512_path,
 )
 from siim_isic_melanoma_classification.lr_scheduler import (
     DelayedCosineAnnealingLR,
@@ -145,9 +142,9 @@ def train(folds: pd.DataFrame, fold_number: int, path):
         train_df=train_df,
         valid_df=test_df,
         test_df=test_df,
-        train_images_path=train_img_384_extra_path,
-        valid_images_path=train_img_384_path,
-        test_images_path=train_img_384_path,  # NOTE: OOF predictions
+        train_images_path=train_img_512_extra_path,
+        valid_images_path=train_img_512_path,
+        test_images_path=train_img_512_path,  # NOTE: OOF predictions
         path=path,
     )
     callback = ModelCheckpoint(
@@ -197,7 +194,7 @@ def inference(
 
     # make dataloader load full test data
     model.test_df = test_df
-    model.test_images_path = test_img_384_path
+    model.test_images_path = test_img_512_path
 
     results = list()
     for batch in model.test_dataloader():
@@ -272,11 +269,7 @@ class MyModel(LightningModule):
     def train_dataloader(self):
         augmentations = Compose(
             [
-                A.RandomResizedCrop(
-                    height=self.hparams.sz,
-                    width=self.hparams.sz,
-                    scale=(0.7, 1.0),
-                ),
+                A.RandomCrop(height=self.hparams.sz, width=self.hparams.sz),
                 # AdvancedHairAugmentation(),
                 A.GridDistortion(),
                 A.RandomBrightnessContrast(),
@@ -303,7 +296,6 @@ class MyModel(LightningModule):
         )
         return DataLoader(
             train_ds,
-            # sampler=sampler,
             batch_size=self.hparams.bs,
             shuffle=True,
             num_workers=os.cpu_count(),
@@ -361,6 +353,7 @@ class MyModel(LightningModule):
     def val_dataloader(self):
         augmentations = Compose(
             [
+                A.CenterCrop(height=self.hparams.sz, width=self.hparams.sz),
                 A.Normalize(
                     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
                 ),
@@ -384,6 +377,7 @@ class MyModel(LightningModule):
     def test_dataloader(self):
         augmentations = Compose(
             [
+                A.CenterCrop(height=self.hparams.sz, width=self.hparams.sz),
                 A.Normalize(
                     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
                 ),
@@ -393,7 +387,7 @@ class MyModel(LightningModule):
         test_ds = MelanomaDataset(
             df=self.test_df,
             images_path=self.test_images_path,
-            augmentations=augmentations,  # TODO: add TTA
+            augmentations=augmentations,
             train_or_valid=False,
         )
         return DataLoader(
@@ -463,31 +457,6 @@ def show_moles(images):
     images, _ = images[0], images[1]
     grid = utils.make_grid(images)
     plt.imshow(grid.numpy().transpose((1, 2, 0)))
-
-
-# def split_train_test_using_stratigy_group_k_fold(df):
-#     """Split train/valid set."""
-#     train_df = df
-
-#     patient_ids = train_df["patient_id"].unique()
-#     patient_means = train_df.groupby(["patient_id"])["target"].mean()
-
-#     # split at patient_id level
-#     train_idx, val_idx = split_train_test_sets(
-#         np.arange(len(patient_ids)),
-#         stratify=(patient_means > 0),
-#         test_size=0.2,  # validation set size
-#     )
-
-#     train_patient_ids = patient_ids[train_idx]
-#     train = train_df[train_df.patient_id.isin(train_patient_ids)].reset_index()
-
-#     valid_patient_ids = patient_ids[val_idx]
-#     valid = train_df[train_df.patient_id.isin(valid_patient_ids)].reset_index()
-
-#     assert train_df.shape[0] == train.shape[0] + valid.shape[0]
-
-#     return train, valid
 
 
 if __name__ == "__main__":

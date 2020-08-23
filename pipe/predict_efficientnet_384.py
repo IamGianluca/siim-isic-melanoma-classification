@@ -14,9 +14,9 @@ from siim_isic_melanoma_classification.constants import (
     params_fpath,
     submissions_path,
     test_fpath,
-    test_img_384_path,
-    train_img_384_extra_path,
-    train_img_384_path,
+    test_img_512_path,
+    train_img_512_extra_path,
+    train_img_512_path,
 )
 
 from pipe.train_efficientnet_384 import (
@@ -37,7 +37,7 @@ name = "efficientnet"
 metric_fpath = metrics_path / "l1_efficientnet_tta_384_cv.metric"
 
 
-def main(tta_iters=50):
+def main(tta_iters=10):
     """Validate with OOF predictions the effectiveness of using different
     levels of TTA.
     """
@@ -62,7 +62,7 @@ def main(tta_iters=50):
         # setup ds and dl
         valid_ds = MelanomaDataset(
             df=valid_df,
-            images_path=train_img_384_path,  # we are doing OOF CV
+            images_path=train_img_512_path,  # we are doing OOF CV
             augmentations=get_tta_transforms(),
             train_or_valid=True,
         )
@@ -76,7 +76,6 @@ def main(tta_iters=50):
 
         # setup TTA
         model.test_df = valid_df
-        # model.test_images_path = train_img_384_path
         model.test_dataloader = lambda: valid_dl
 
         # save OOF predictions
@@ -145,7 +144,7 @@ def main(tta_iters=50):
         test_df = pd.read_csv(test_fpath)
         test_ds = MelanomaDataset(
             df=test_df,
-            images_path=test_img_384_path,  # we are doing OOF CV
+            images_path=test_img_512_path,  # we are doing OOF CV
             augmentations=get_tta_transforms(),
             train_or_valid=False,
         )
@@ -159,7 +158,6 @@ def main(tta_iters=50):
 
         # setup TTA
         model.test_df = test_df
-        # model.test_images_path = test_img_384_path
         model.test_dataloader = lambda: test_dl
 
         # save OOF predictions
@@ -198,18 +196,16 @@ def main(tta_iters=50):
 def get_tta_transforms():
     return Compose(
         [
-            A.RandomResizedCrop(
-                height=hparams.sz, width=hparams.sz, scale=(0.7, 1.0),
-            ),
+            A.RandomCrop(height=hparams.sz, width=hparams.sz),
             # AdvancedHairAugmentation(),
-            A.GridDistortion(),
-            A.RandomBrightnessContrast(),
-            A.ShiftScaleRotate(),
-            A.Flip(p=0.5),
-            A.CoarseDropout(
-                max_height=int(hparams.sz / 10),
-                max_width=int(hparams.sz / 10),
-            ),
+            # A.GridDistortion(),
+            # A.RandomBrightnessContrast(),
+            # A.ShiftScaleRotate(),
+            # A.Flip(p=0.5),
+            # A.CoarseDropout(
+            #     max_height=int(hparams.sz / 10),
+            #     max_width=int(hparams.sz / 10),
+            # ),
             # A.HueSaturationValue(),
             A.Normalize(
                 mean=[0.485, 0.456, 0.406],
